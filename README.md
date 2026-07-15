@@ -17,12 +17,12 @@ The gateway exports **Prometheus metrics** (`/metrics`) for Grafana visualizatio
 
 ```mermaid
 graph TD
-    subgraph Sensor Node (ESP32-C3)
+    subgraph "Sensor Node (ESP32-C3)"
         A1[Sensors: AHT20 / BMP280 / TSL2561] --> A2[Encrypt AES-128 GCM]
         A2 --> A3[Transmit LoRa Packet]
     end
     
-    subgraph Gateway (ESP32-C6)
+    subgraph "Gateway (ESP32-C6)"
         B1[Receive LoRa Packet] --> B2[Decrypt AES-128 GCM]
         B2 --> B3[Expose Prometheus Metrics /metrics]
         B2 --> B4[Serve Web Dashboard & BLE Config Portal]
