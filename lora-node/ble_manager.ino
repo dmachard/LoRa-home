@@ -158,6 +158,23 @@ void setupBLE(bool isConfigured) {
   NimBLEDevice::setPower(ESP_PWR_LVL_P9);
   NimBLEDevice::setSecurityAuth(false, false, true);
 
+  // Configuration publicitaire BLE personnalisée pour Linux/Chrome
+  NimBLEAdvertising *pAdvertising = NimBLEDevice::getAdvertising();
+  pAdvertising->stop(); // Arrête la publicité par défaut du DataPipe
+  
+  // Données de publicité principales (contient le nom et les flags)
+  NimBLEAdvertisementData advData;
+  advData.setName(bleName);
+  advData.setFlags(BLE_HS_ADV_F_DISC_GEN | BLE_HS_ADV_F_BREDR_UNSUP);
+  
+  // Données de réponse au scan (contient l'UUID du service)
+  NimBLEAdvertisementData scanResponseData;
+  scanResponseData.setCompleteServices(NimBLEUUID(BLE_SERVICE_UUID));
+  
+  pAdvertising->setAdvertisementData(advData);
+  pAdvertising->setScanResponseData(scanResponseData);
+  pAdvertising->start();
+
   bleStartMs = millis();
   Serial.println("Serveur BLE active. En attente de connexion (60s)...");
 }

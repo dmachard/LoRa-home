@@ -175,7 +175,7 @@ const char* getRssiBars(float rssi) {
 
 void resetWindow(struct NodeData &n, uint32_t seq) {
   n.window_seq_start = seq;
-  n.window_received = 0;
+  n.window_received = 1;
   n.window_start_ms = millis();
   n.loss_percent = 0.0f;
 }

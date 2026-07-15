@@ -136,8 +136,7 @@ void loopLoRa() {
   // 3. Lecture TSL2561
   if (tsl_detected && tsl != nullptr) {
     sensors_event_t event;
-    tsl->getEvent(&event);
-    if (event.light) {
+    if (tsl->getEvent(&event)) {
       float lux = event.light;
       Serial.printf("TSL2561: L=%.1flux\n", lux);
       
