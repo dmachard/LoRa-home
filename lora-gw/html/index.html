@@ -1,0 +1,266 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Dashboard - LoRa Gateway</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div class="container">
+    <header>
+      <div>
+        <h1>LoRa IoT Gateway</h1>
+        <div style="font-size:12px; color:#64748b; margin-top:4px;">Real-time Dashboard</div>
+      </div>
+      <div>
+        <a href="/metrics" class="btn-metrics" id="btn-metrics">Prometheus Metrics</a>
+        <a href="/admin" class="btn-update" style="background: linear-gradient(135deg, #38bdf8, #2563eb); color: white; border: none; font-weight: 600; margin-left: 8px;">Administration →</a>
+      </div>
+    </header>
+
+    <!-- Dashboard -->
+    <div id="tab-dashboard" class="tab-content active">
+      <div class="gw-stats">
+        <div class="gw-stat-card" id="card-uptime">
+          <div class="stat-info">
+            <span class="stat-label">Gateway Uptime</span>
+            <span class="stat-val" id="gw-uptime">--</span>
+          </div>
+        </div>
+
+        <div class="gw-stat-card" id="card-wifi">
+          <div class="stat-info">
+            <span class="stat-label">WiFi Signal</span>
+            <span class="stat-val" id="gw-wifi">--</span>
+          </div>
+          <div class="signal-bars" id="wifi-bars">
+            <div class="signal-bar"></div>
+            <div class="signal-bar"></div>
+            <div class="signal-bar"></div>
+            <div class="signal-bar"></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="grid" id="nodes-container">
+        <div class="stat-card" style="grid-column: 1/-1; text-align: center; padding: 40px; color: #64748b; justify-content: center;">
+          <div class="pulse-ring"></div>
+          Loading LoRa nodes...
+        </div>
+      </div>
+
+      <!-- Legend -->
+      <div class="legend-card">
+        <div class="legend-header">
+          <svg class="legend-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/></svg>
+          Signal Quality Legend
+        </div>
+        <div class="legend-body">
+          <div class="legend-section">
+            <span class="legend-section-title">RSSI (Strength)</span>
+            <div class="legend-indicators">
+              <span class="legend-tag strong"><span class="legend-dot"></span>Strong (&ge; -80 dBm)</span>
+              <span class="legend-tag medium"><span class="legend-dot"></span>Medium (-81 to -105 dBm)</span>
+              <span class="legend-tag weak"><span class="legend-dot"></span>Weak (&lt; -105 dBm)</span>
+            </div>
+          </div>
+          <div class="legend-section">
+            <span class="legend-section-title">SNR (Noise Ratio)</span>
+            <div class="legend-indicators">
+              <span class="legend-tag strong"><span class="legend-dot"></span>Clean (&ge; 7 dB)</span>
+              <span class="legend-tag medium"><span class="legend-dot"></span>Noisy (0 to 7 dB)</span>
+              <span class="legend-tag weak"><span class="legend-dot"></span>Poor (&lt; 0 dB)</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const nodesContainer = document.getElementById('nodes-container');
+
+    const getRssiIcon = (rssi) => {
+      let color = '#ef4444';
+      let activeBars = 1;
+      if (rssi >= -80) {
+        color = '#10b981';
+        activeBars = 3;
+      } else if (rssi >= -105) {
+        color = '#f59e0b';
+        activeBars = 2;
+      }
+      return `
+        <svg class="node-radio-icon" style="color: ${color};" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M6 20v-4" style="opacity: ${activeBars >= 1 ? 1 : 0.3}" />
+          <path d="M12 20v-8" style="opacity: ${activeBars >= 2 ? 1 : 0.3}" />
+          <path d="M18 20V4" style="opacity: ${activeBars >= 3 ? 1 : 0.3}" />
+        </svg>`;
+    };
+
+    const getSnrIcon = (snr) => {
+      let color = '#64748b';
+      if (snr !== undefined) {
+        if (snr >= 7) color = '#10b981';
+        else if (snr >= 0) color = '#f59e0b';
+        else color = '#ef4444';
+      }
+      return `
+        <svg class="node-radio-icon" style="color: ${color};" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M2 10h3l2.5-6 3.5 12 2.5-9 2.5 7h3l2.5-4 1.5 2h2" />
+        </svg>`;
+    };
+
+    const formatUptime = (seconds) => {
+      const d = Math.floor(seconds / (3600 * 24));
+      const h = Math.floor((seconds % (3600 * 24)) / 3600);
+      const m = Math.floor((seconds % 3600) / 60);
+      const s = seconds % 60;
+      let res = '';
+      if (d > 0) res += d + 'd ';
+      if (h > 0 || d > 0) res += h + 'h ';
+      if (m > 0 || h > 0 || d > 0) res += m + 'm ';
+      res += s + 's';
+      return res;
+    };
+
+    const updateData = async () => {
+      try {
+        const response = await fetch('/api/nodes');
+        const data = await response.json();
+
+        // Gateway Uptime & WiFi RSSI
+        if (data.gateway && data.gateway.uptime_sec !== undefined) {
+          document.getElementById('gw-uptime').innerText = formatUptime(data.gateway.uptime_sec);
+          
+          const rssi = data.gateway.wifi_rssi;
+          document.getElementById('gw-wifi').innerText = rssi + ' dBm';
+          
+          // Update signal strength bars
+          const bars = document.querySelectorAll('#wifi-bars .signal-bar');
+          let activeCount = 0;
+          if (rssi >= -55) activeCount = 4;
+          else if (rssi >= -70) activeCount = 3;
+          else if (rssi >= -85) activeCount = 2;
+          else if (rssi >= -100) activeCount = 1;
+          
+          bars.forEach((bar, idx) => {
+            if (idx < activeCount) {
+              bar.classList.add('active');
+            } else {
+              bar.classList.remove('active');
+            }
+          });
+        }
+
+        if (!data.nodes || data.nodes.length === 0) {
+          nodesContainer.innerHTML = `
+            <div class="stat-card" style="grid-column: 1/-1; text-align: center; padding: 40px; color: #64748b; justify-content: center;">
+              No active nodes detected at the moment.
+            </div>`;
+          return;
+        }
+
+        let html = '';
+        data.nodes.forEach(node => {
+          const isOnline = node.elapsed_sec < 120; // Online if seen within 2 minutes
+          const statusClass = isOnline ? '' : 'offline';
+          const statusText = isOnline ? 'Online' : 'Offline';
+          const lastSeenText = isOnline ? node.elapsed_sec + 's ago' : formatUptime(node.elapsed_sec) + ' ago';
+
+          let readingsHtml = '';
+          if (node.has_sensor) {
+            readingsHtml += `
+              <div class="metric-item">
+                <div class="metric-value-wrapper">
+                  <svg class="metric-icon temp" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M14 14.76V3.5a2.5 2.5 0 0 0-5 0v11.26a4.5 4.5 0 1 0 5 0z"/></svg>
+                  <span class="metric-value">${node.temperature !== undefined ? node.temperature.toFixed(1) : '--'}<span class="metric-unit">°C</span></span>
+                </div>
+                <span class="metric-label">Temperature</span>
+              </div>`;
+          }
+          if (node.has_humidity) {
+            readingsHtml += `
+              <div class="metric-item">
+                <div class="metric-value-wrapper">
+                  <svg class="metric-icon hum" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22a7 7 0 0 0 7-7c0-4.3-7-11-7-11S5 10.7 5 15a7 7 0 0 0 7 7z"/></svg>
+                  <span class="metric-value">${node.humidity !== undefined ? node.humidity.toFixed(1) : '--'}<span class="metric-unit">%</span></span>
+                </div>
+                <span class="metric-label">Humidity</span>
+              </div>`;
+          }
+          if (node.has_pressure) {
+            readingsHtml += `
+              <div class="metric-item">
+                <div class="metric-value-wrapper">
+                  <svg class="metric-icon press" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l3 3"/></svg>
+                  <span class="metric-value">${node.pressure !== undefined ? node.pressure.toFixed(0) : '--'}<span class="metric-unit">hPa</span></span>
+                </div>
+                <span class="metric-label">Pressure</span>
+              </div>`;
+          }
+          if (node.has_light) {
+            readingsHtml += `
+              <div class="metric-item">
+                <div class="metric-value-wrapper">
+                  <svg class="metric-icon light" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41"/></svg>
+                  <span class="metric-value">${node.light !== undefined ? node.light : '--'}<span class="metric-unit">lx</span></span>
+                </div>
+                <span class="metric-label">Light</span>
+              </div>`;
+          }
+          if (node.has_battery) {
+            readingsHtml += `
+              <div class="metric-item">
+                <div class="metric-value-wrapper">
+                  <svg class="metric-icon batt" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect x="1" y="6" width="18" height="12" rx="2" ry="2"/><line x1="23" y1="11" x2="23" y2="13"/></svg>
+                  <span class="metric-value">${node.battery !== undefined ? node.battery : '--'}<span class="metric-unit">mV</span></span>
+                </div>
+                <span class="metric-label">Battery</span>
+              </div>`;
+          }
+
+          html += `
+            <div class="node-card ${statusClass}">
+              <div class="node-header">
+                <div class="node-title-group">
+                  <span class="node-name">${node.name}</span>
+                  <span class="node-meta">ID: #${node.id}</span>
+                </div>
+                <span class="node-badge" style="background:${isOnline ? 'rgba(16,185,129,0.1)' : 'rgba(239,68,68,0.1)'}; color:${isOnline ? '#10b981' : '#ef4444'}; border-color:${isOnline ? 'rgba(16,185,129,0.2)' : 'rgba(239,68,68,0.2)'};">${statusText}</span>
+              </div>
+              
+              <div class="node-readings">
+                ${readingsHtml || '<div style="flex:1; text-align:center; color:#64748b; font-size:13px; padding:12px;">No active sensors</div>'}
+              </div>
+
+              <div class="node-footer">
+                <div class="node-radio-info">
+                  <span>
+                    ${getRssiIcon(node.rssi)}
+                    RSSI: <b>${node.rssi} dBm</b>
+                  </span>
+                  <span>
+                    ${getSnrIcon(node.snr)}
+                    SNR: <b>${node.snr !== undefined ? node.snr.toFixed(1) : '--'} dB</b>
+                  </span>
+                </div>
+                <div class="status-indicator">
+                  <span class="dot ${isOnline ? '' : 'offline'}"></span>
+                  <span>Seen ${lastSeenText}</span>
+                </div>
+              </div>
+            </div>`;
+        });
+        nodesContainer.innerHTML = html;
+      } catch (error) {
+        console.error('Error fetching data:', error);
+      }
+    };
+
+    updateData();
+    setInterval(updateData, 5000);
+  </script>
+</body>
+</html>

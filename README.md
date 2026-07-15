@@ -1,105 +1,59 @@
-# ESP32 LoRa Gateway & Sensor Nodes System
+# ESP32 LoRa Gateway & Configurable Sensor Nodes System
 
-An end-to-end telemetry system featuring an **ESP32 Web Gateway** and multiple **ESP32 sensor client nodes** transmitting encrypted data using **LoRa (433 MHz)** and **AES-128 GCM** security. The gateway acts as a web server exporting **Prometheus metrics** (`/metrics`) for visualization in Grafana.
+An end-to-end telemetry system featuring a modular **ESP32-C6 Web Gateway** and configurable **ESP32-C3 Sensor Client Nodes** transmitting encrypted data using **LoRa (433 MHz)** and **AES-128 GCM** security. 
 
-Based on ESP32-C6, ESP32-S3 and using LoRa SX1262 and SX1278 transceivers.
-
-## Architecture
-
-### 1. Gateway
-Acts as the central receiver and metrics exporter.
-*   **Microcontroller:** ESP32-C6
-*   **LoRa Transceiver:** SX1262
-*   **Wi-Fi Connection:** Connected to Local Wi-Fi with a static IP.
-*   **Prometheus Metrics:** Exposes a web server on port `8080` at path `/metrics`.
-
-#### Gateway Pinout (SX1262 SPI)
-*   `SCK`: `6`
-*   `MISO`: `2`
-*   `MOSI`: `7`
-*   `NSS/CS`: `10`
-*   `RST`: `11`
-*   `BUSY`: `12`
-*   `DIO1`: `13` (Interrupt-driven RX)
-
+The gateway exports **Prometheus metrics** (`/metrics`) for Grafana visualization and hosts a local configuration and diagnostic dashboard. Both devices store credentials and configuration parameters dynamically inside their **Non-Volatile Memory (NVM)** and support **Web Bluetooth (BLE) provisioning** directly from the local dashboard.
 
 ---
 
-### 2. Client SX1262 Ping 
-Simple node sending sequence numbers for range/hardware testing.
-*   **Microcontroller:** ESP32-S3
-*   **LoRa Transceiver:** SX1262
-*   **Node ID:** `1`
+## Workspace Structure
 
-#### SX1262 Pinout
-*   `SCK`: `6` | `MISO`: `2` | `MOSI`: `7` | `CS`: `10`
-*   `RST`: `0` | `BUSY`: `5` | `DIO1`: `8`
-
+*   [**`lora-gw/`**](./lora-gw/): ESP32-C6 central gateway receiver, web server, and dashboard.
+*   [**`lora-node/`**](./lora-node/): ESP32-C3 telemetry client node reading environmental sensors (AHT20, BMP280, TSL2561).
 
 ---
 
-### 3. Client AHT20 
-Telemetry node reading temperature and humidity from an AHT20 sensor, sending GCM-encrypted LoRa payloads.
-*   **Microcontroller:** ESP32-S3
+## System Architecture
+
+```mermaid
+graph TD
+    subgraph Sensor Node (ESP32-C3)
+        A1[Sensors: AHT20 / BMP280 / TSL2561] --> A2[Encrypt AES-128 GCM]
+        A2 --> A3[Transmit LoRa Packet]
+    end
+    
+    subgraph Gateway (ESP32-C6)
+        B1[Receive LoRa Packet] --> B2[Decrypt AES-128 GCM]
+        B2 --> B3[Expose Prometheus Metrics /metrics]
+        B2 --> B4[Serve Web Dashboard & BLE Config Portal]
+    end
+
+    A3 -- 433 MHz LoRa --> B1
+    C[User Browser / Local Dashboard] -- Web Bluetooth BLE --x Node / Gateway Config Modes
+```
+
+### 1. Gateway (`lora-gw`)
+Acts as the central receiver, decryptor, and metrics exporter.
+*   **MCU:** ESP32-C6
 *   **LoRa Transceiver:** SX1262
-*   **Sensor:** AHT20 (I2C)
-*   **Node ID:** `2`
+*   **OLED Display:** SSD1306 (128x64) displaying system status and BLE config options.
+*   **NVM Configs:** Persistent storage for Wi-Fi SSID/password, IP address (static IP support), and AES keys.
+*   **Provisioning:** Forced BLE config mode if NVM is uninitialized or when the `BOOT` button (GPIO 9) is held on startup.
 
-#### Pinout & Connections
-*   **SX1262 SPI:** `SCK` = `6`, `MISO` = `2`, `MOSI` = `7`, `CS` = `10`, `RST` = `0`, `BUSY` = `5`, `DIO1` = `8`
-*   **AHT20 I2C:** `SDA` = `3`, `SCL` = `4`
-
----
-
-### 4. Client DHT22
-Telemetry node reading from a DHT22 sensor, transmitting encrypted packets using an SX1278 transceiver.
-*   **Microcontroller:** ESP32-S3
+### 2. Client Node (`lora-node`)
+Telemetry node reading environmental sensors and sending GCM-encrypted payloads.
+*   **MCU:** ESP32-C3
 *   **LoRa Transceiver:** SX1278
-*   **Sensor:** DHT22 (Single-wire digital)
-*   **Node ID:** `1`
-
-#### Pinout & Connections
-*   **SX1278 SPI:** `SCK` = `6`, `MISO` = `2`, `MOSI` = `7`, `CS` = `10`, `RST` = `0`, `DIO0` = `8`, `DIO1` = `-1`
-*   **DHT22:** Pin `4`
-
-
----
-
-## Available Prometheus Metrics
-The gateway exports the following metrics on port `8080` at `/metrics` (all labeled by `{node="<ID>"}`):
-*   `lora_rssi_dbm` - Last packet Signal Strength Indication (dBm)
-*   `lora_snr_db` - Last packet Signal-to-Noise Ratio (dB)
-*   `lora_last_seen_seconds` - Uptime duration since the last received packet
-*   `lora_packet_seq` - Latest packet sequence counter
-*   `lora_packet_loss_percent` - Calculated packet loss percentage over a 5-minute rolling window
-*   `lora_reboots` - Number of client-side reboots detected
-*   `lora_temperature_celsius` & `lora_humidity_percent` - Decrypted sensor readings
-*   `lora_node_reset_reason` - Remote ESP32 restart cause code (e.g. `1` = Power-on, `6` = Task Watchdog)
-*   `lora_node_error_code` - Remote sensor states (`0` = OK, `1` = Sensor Failure, `2` = TX Failure)
-
-
----
-
-## LoRa Configuration
-
-All devices share the following radio parameters:
-*   **Frequency:** `433.0 MHz`
-*   **Bandwidth:** `125.0 kHz`
-*   **Spreading Factor (SF):** `7`
-*   **Coding Rate (CR):** `5`
-*   **Preamble Length:** `8`
-*   **Sync Word:** `RADIOLIB_SX126X_SYNC_WORD_PRIVATE` (or `0x12` for SX1278 node)
-
+*   **Sensors Support:** AHT20 (temp/humidity), BMP280 (temp/pressure), TSL2561 (light).
+*   **NVM Configs:** Persistent storage for Node ID, name, tx interval, LoRa frequency, bandwidth, spreading factor, coding rate, preamble, sync word, and AES key.
+*   **Provisioning:** Enters BLE config mode for 60 seconds on boot (or via `BOOT` button), then transitions to normal telemetry transmission.
 
 ---
 
 ## Security & Packet Format (AES-128 GCM)
 
-Data payload authentication and confidentiality are secured via **AES-128 GCM**.
-
-*   **Pre-Shared Key:** `2B 7E 15 16 28 AE D2 A6 AB F7 15 88 09 CF 4F 3C`
-*   **IV (Initialization Vector) Construction:** First 9 bytes of the frame (unencrypted header) padded with 3 bytes of `0x00` to form a 12-byte IV.
-*   **Tag Size:** `8 bytes` (attached to the end of the frame).
+*   **Initialization Vector (IV):** Derived dynamically using the frame's unencrypted header (Node ID, Sequence Number, and Random Session ID) padded with 3 bytes of `0x00` to form a 12-byte IV.
+*   **Authentication Tag:** `8 bytes` appended to the end of the payload.
 
 ### Over-The-Air Frame Structure
 
@@ -111,12 +65,42 @@ Data payload authentication and confidentiality are secured via **AES-128 GCM**.
 | `9 - ...` | **Encrypted Payload** | Ciphertext of the payload |
 | `End - 7` to `End` | **GCM Tag** | `8 bytes` auth tag |
 
-### Sensor Payload Structure (`SensorPayload` - Packed)
+---
 
-| Offset | Type | Field | Description |
-| :--- | :--- | :--- | :--- |
-| `0` | `int16_t` | `temperature_x100` | Temperature scaled by 100 (e.g. `2350` = `23.50°C`) |
-| `2` | `uint16_t` | `humidity_x100` | Humidity scaled by 100 (e.g. `5520` = `55.20%`) |
-| `4` | `uint8_t` | `type` | Sensor Type (`0x02` = DHT22, `0x03` = AHT20) |
-| `5` | `uint8_t` | `reset_reason` | ESP32 boot reason code (from `esp_reset_reason()`) |
-| `6` | `uint8_t` | `error_code` | Status (`0` = OK, `1` = Sensor Error, `2` = TX Error) |
+## Prerequisites & Installation
+
+### 1. Install `arduino-cli` Globally
+To compile and flash the boards, install `arduino-cli` in your user-level binary directory (`~/.local/bin`):
+```bash
+curl -fsSL https://raw.githubusercontent.com/arduino/arduino-cli/master/install.sh | BINDIR=~/.local/bin sh
+```
+Ensure that `~/.local/bin` is in your system `PATH`.
+
+### 2. Install Cores & Required Libraries
+Run the following commands to install the ESP32 platform core and all library dependencies for both the gateway and the nodes:
+```bash
+# Update index and install ESP32 platform
+arduino-cli core update-index
+arduino-cli core install esp32:esp32
+
+# Install all required libraries
+arduino-cli lib install "RadioLib" "Crypto" "Adafruit SSD1306" "Adafruit GFX Library" "Adafruit AHTX0" "Adafruit BusIO" "Adafruit Unified Sensor" "NimBLE-Arduino" "ArduinoJson" "NimBLE-DataPipe"
+```
+
+---
+
+## Quick Start (Build & Flash)
+
+### Flash the Gateway
+```bash
+cd lora-gw
+make         # Generates web headers and compiles
+make upload  # Flash the firmware via USB (Default port /dev/ttyACM0)
+```
+
+### Flash the Node
+```bash
+cd lora-node
+make         # Compile node sketch
+make upload  # Flash the node via USB (Default port /dev/ttyACM0)
+```

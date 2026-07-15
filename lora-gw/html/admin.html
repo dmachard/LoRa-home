@@ -1,0 +1,762 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Administration - LoRa Gateway</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div class="container">
+    <header>
+      <div>
+        <h1>Gateway Administration</h1>
+        <div style="font-size:12px; color:#64748b; margin-top:4px;">System configuration and node provisioning</div>
+      </div>
+      <div>
+        <a href="/metrics" class="btn-metrics">Prometheus Metrics</a>
+        <a href="/update" class="btn-update">Firmware Update</a>
+        <a href="/" class="btn" style="background:rgba(255, 255, 255, 0.08); border:1px solid rgba(255,255,255,0.1); margin-left:8px;">← Dashboard</a>
+      </div>
+    </header>
+
+    <!-- Tab Navigation -->
+    <div class="tabs">
+      <button class="tab-btn active" id="tab-btn-gw-config" onclick="switchTab('gw-config')">Gateway Configuration</button>
+      <button class="tab-btn" id="tab-btn-ble" onclick="switchTab('ble')">Node Configuration (BLE)</button>
+    </div>
+
+    <!-- Gateway Configuration Tab -->
+    <div id="tab-gw-config" class="tab-content active">
+      <div id="gw-ble-security-notice" class="alert-notice hidden">
+        <strong>⚠️ Bluetooth disabled by browser (Security)</strong><br>
+        The browser requires a secure connection (HTTPS or localhost) to allow Bluetooth.<br>
+        To use local BLE, open this page locally (double-click) or access the local IP via HTTP.
+      </div>
+
+      <div id="gw-ble-container" style="margin-bottom: 24px;">
+        <!-- BLE Gateway Connection -->
+        <div class="stat-card" style="padding: 24px;">
+          <h2 style="margin-top:0; font-size: 18px; font-weight: 700;">Bluetooth Low Energy Connection (Gateway)</h2>
+          <p style="font-size: 13px; color: #94a3b8; margin-bottom: 16px;">
+            Put the gateway into config mode (press the BOOT button or start it without config; the blue LED will start flashing), then connect via local BLE below.
+          </p>
+          <div style="display: flex; gap: 16px; align-items: center;">
+            <button type="button" class="btn" id="btn-gw-connect">Connect to Gateway</button>
+            <div style="display: flex; align-items: center; gap: 8px; font-size: 14px;">
+              <span id="gw-status-dot" class="dot offline"></span>
+              <span id="gw-status-text" style="font-weight:600; color:#ef4444;">Disconnected</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Gateway Configuration Form -->
+      <form id="gw-config-form" class="hidden">
+        <div class="grid" style="grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 24px; margin-bottom: 24px;">
+          <!-- WiFi and Auth -->
+          <div class="stat-card" style="padding: 24px;">
+            <h3 style="margin-top:0; font-size: 15px; font-weight: 700; color: #38bdf8; border-bottom:1px solid rgba(255,255,255,0.05); padding-bottom:10px; margin-bottom:15px;">WiFi Network & Security</h3>
+            <div class="form-group">
+              <label for="gw_wifi_ssid">Network Name (SSID)</label>
+              <input type="text" id="gw_wifi_ssid" required placeholder="e.g. MyWiFiNetwork">
+            </div>
+            <div class="form-group">
+              <label for="gw_wifi_pass">WiFi Password</label>
+              <input type="text" id="gw_wifi_pass" required placeholder="WPA Key">
+            </div>
+            <div class="form-group" style="margin-top:24px; border-top:1px solid rgba(255,255,255,0.05); padding-top:16px;">
+              <label for="gw_admin_pass">Administration Password (HTTP Auth)</label>
+              <input type="text" id="gw_admin_pass" required placeholder="admin" value="admin">
+              <span style="font-size:10px; color:#64748b; display:block; margin-top:4px;">Default: admin</span>
+            </div>
+          </div>
+
+          <!-- IP Settings -->
+          <div class="stat-card" style="padding: 24px;">
+            <h3 style="margin-top:0; font-size: 15px; font-weight: 700; color: #38bdf8; border-bottom:1px solid rgba(255,255,255,0.05); padding-bottom:10px; margin-bottom:15px;">IP Configuration</h3>
+            <div class="form-group" style="display: flex; align-items: center; gap: 10px; margin-bottom: 20px;">
+              <input type="checkbox" id="gw_use_static" style="width:20px; height:20px; cursor:pointer;">
+              <label for="gw_use_static" style="margin-bottom:0; cursor:pointer;">Use static IP address</label>
+            </div>
+            <div id="gw-static-ip-fields" style="display: none;">
+              <div class="form-group">
+                <label for="gw_local_ip">Local IP Address</label>
+                <input type="text" id="gw_local_ip" placeholder="e.g. 192.168.1.100">
+              </div>
+              <div class="form-group">
+                <label for="gw_gateway_ip">Default Gateway</label>
+                <input type="text" id="gw_gateway_ip" placeholder="e.g. 192.168.1.1">
+              </div>
+              <div class="form-group">
+                <label for="gw_subnet_mask">Subnet Mask</label>
+                <input type="text" id="gw_subnet_mask" placeholder="e.g. 255.255.255.0">
+              </div>
+            </div>
+          </div>
+
+          <!-- AES Encryption Key -->
+          <div class="stat-card" style="padding: 24px;">
+            <h3 style="margin-top:0; font-size: 15px; font-weight: 700; color: #38bdf8; border-bottom:1px solid rgba(255,255,255,0.05); padding-bottom:10px; margin-bottom:15px;">LoRa Security (AES-GCM Encryption)</h3>
+            <div class="form-group">
+              <label for="gw_aes_key">Shared AES Key (32 hex chars / 16 bytes)</label>
+              <input type="text" id="gw_aes_key" maxlength="32" minlength="32" required placeholder="Hexadecimal AES Key">
+            </div>
+            <button type="button" class="btn btn-secondary" onclick="generateRandomGwKey()" style="width:100%; margin-top:8px;">Generate Random Key</button>
+          </div>
+        </div>
+
+        <div style="display: flex; gap: 16px; margin-top: 24px; border-top: 1px solid rgba(255,255,255,0.05); padding-top: 24px;">
+          <input type="submit" value="Save Configuration" class="btn" style="flex: 1;">
+          <button type="button" class="btn btn-danger" id="btn-gw-reset" style="padding: 12px 28px;">Factory Reset</button>
+        </div>
+      </form>
+    </div>
+
+    <!-- Node Configuration Tab (BLE) -->
+    <div id="tab-ble" class="tab-content">
+      <div id="ble-security-notice" class="alert-notice hidden">
+        <strong>⚠️ Bluetooth disabled by browser (Security)</strong><br>
+        The browser requires a secure connection (HTTPS or localhost) to allow Bluetooth.<br>
+        To use local BLE, open this page locally (double-click) or access the local IP via HTTP.
+      </div>
+
+      <div id="ble-container">
+        <!-- BLE Node Connection -->
+        <div class="stat-card" style="margin-bottom: 24px; padding: 24px;">
+          <h2 style="margin-top:0; font-size: 18px; font-weight: 700;">Bluetooth Low Energy Connection (Node)</h2>
+          <p style="font-size: 13px; color: #94a3b8; margin-bottom: 16px;">
+            Put the LoRa node into configuration mode (by pressing the BOOT button once; the blue LED will start flashing), then connect below.
+          </p>
+          <div style="display: flex; gap: 16px; align-items: center;">
+            <button type="button" class="btn" id="btn-connect">Connect to Node</button>
+            <div style="display: flex; align-items: center; gap: 8px; font-size: 14px;">
+              <span id="status-dot" class="dot offline"></span>
+              <span id="status-text" style="font-weight:600; color:#ef4444;">Disconnected</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Node Configuration Form -->
+        <form id="config-form" class="hidden">
+          <div class="grid" style="grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 24px; margin-bottom: 24px;">
+            <!-- Node Identity Card -->
+            <div class="stat-card" style="padding: 24px;">
+              <h3 style="margin-top:0; font-size: 15px; font-weight: 700; color: #38bdf8; border-bottom:1px solid rgba(255,255,255,0.05); padding-bottom:10px; margin-bottom:15px;">Node Identity</h3>
+              <div class="form-group">
+                <label for="node_id">Unique Node ID</label>
+                <input type="number" id="node_id" min="1" max="254" required>
+              </div>
+              <div class="form-group">
+                <label for="node_name">Node Name</label>
+                <input type="text" id="node_name" maxlength="15" placeholder="e.g. LivingRoom" required>
+              </div>
+              <div class="form-group">
+                <label for="tx_interval">Transmission Interval (sec)</label>
+                <input type="number" id="tx_interval" min="5" max="3600" required>
+              </div>
+            </div>
+
+            <!-- LoRa Radio Settings Card -->
+            <div class="stat-card" style="padding: 24px;">
+              <h3 style="margin-top:0; font-size: 15px; font-weight: 700; color: #38bdf8; border-bottom:1px solid rgba(255,255,255,0.05); padding-bottom:10px; margin-bottom:15px;">LoRa Radio Settings</h3>
+              <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+                <div class="form-group">
+                  <label for="lora_freq">Frequency (MHz)</label>
+                  <input type="number" id="lora_freq" step="0.1" required>
+                </div>
+                <div class="form-group">
+                  <label for="lora_bw">Bandwidth (kHz)</label>
+                  <select id="lora_bw" required>
+                    <option value="7.8">7.8</option>
+                    <option value="10.4">10.4</option>
+                    <option value="15.6">15.6</option>
+                    <option value="20.8">20.8</option>
+                    <option value="31.25">31.25</option>
+                    <option value="41.7">41.7</option>
+                    <option value="62.5">62.5</option>
+                    <option value="125.0">125.0</option>
+                    <option value="250.0">250.0</option>
+                    <option value="500.0">500.0</option>
+                  </select>
+                </div>
+              </div>
+              <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+                <div class="form-group">
+                  <label for="lora_sf">Spreading Factor (SF)</label>
+                  <input type="number" id="lora_sf" min="6" max="12" required>
+                </div>
+                <div class="form-group">
+                  <label for="lora_cr">Coding Rate (CR)</label>
+                  <input type="number" id="lora_cr" min="5" max="8" required>
+                </div>
+              </div>
+              <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+                <div class="form-group">
+                  <label for="lora_sync">Sync Word (Hex)</label>
+                  <input type="text" id="lora_sync" required>
+                </div>
+                <div class="form-group">
+                  <label for="lora_power">TX Power (dBm)</label>
+                  <input type="number" id="lora_power" min="2" max="20" required>
+                </div>
+              </div>
+              <div class="form-group">
+                <label for="lora_preamble">LoRa Preamble</label>
+                <input type="number" id="lora_preamble" min="6" max="65535" required>
+              </div>
+            </div>
+
+            <!-- AES and OTA Updates Card -->
+            <div class="stat-card" style="padding: 24px;">
+              <h3 style="margin-top:0; font-size: 15px; font-weight: 700; color: #38bdf8; border-bottom:1px solid rgba(255,255,255,0.05); padding-bottom:10px; margin-bottom:15px;">Node Security & Update</h3>
+              <div class="form-group">
+                <label for="aes_key">Shared AES Key (32 hex chars / 16 bytes)</label>
+                <input type="text" id="aes_key" maxlength="32" minlength="32" required placeholder="AES Encryption Key">
+              </div>
+              <button type="button" class="btn btn-secondary" onclick="generateRandomKey()" style="width:100%; margin-bottom: 20px;">Generate Random Key</button>
+
+              <div style="border-top: 1px solid rgba(255,255,255,0.05); padding-top: 16px;">
+                <h4 style="margin-top:0; font-size: 13px; color:#f8fafc; font-weight:700;">Node OTA Update</h4>
+                <div class="form-group" style="margin-top:12px;">
+                  <label for="ota-file" class="custom-file-upload" style="text-align:center;">Choose firmware (.bin)</label>
+                  <input type="file" id="ota-file" accept=".bin">
+                  <div id="ota-file-name" class="file-name">No file selected</div>
+                </div>
+                <button type="button" class="btn btn-success" id="btn-start-ota" style="display:none; width:100%; margin-top:8px;">Start OTA Update</button>
+                
+                <!-- OTA Progress Bar -->
+                <div id="ota-progress-container" style="display:none; margin-top: 16px;">
+                  <div style="display:flex; justify-content:space-between; font-size:12px; margin-bottom:6px;">
+                    <span id="ota-status-label" style="color:#94a3b8;">Uploading file...</span>
+                    <span id="ota-percent" style="font-weight:700; color:#38bdf8;">0%</span>
+                  </div>
+                  <div style="background:rgba(0,0,0,0.3); border-radius:10px; height:8px; overflow:hidden;">
+                    <div id="ota-bar" style="background:linear-gradient(90deg, #38bdf8, #818cf8); width:0%; height:100%; transition:width 0.1s;"></div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div style="display: flex; gap: 16px; margin-top: 24px; border-top: 1px solid rgba(255,255,255,0.05); padding-top: 24px;">
+            <input type="submit" value="Save Node Configuration" class="btn" style="flex: 1;">
+            <button type="button" class="btn btn-danger" id="btn-reset" style="padding: 12px 28px;">Factory Reset Node</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // --- NIMBLE DATAPIPE TRANSPORT CLASS ---
+    class NimBLEDataPipe {
+      constructor(serviceUuid, charUuid) {
+        this.serviceUuid = serviceUuid.toLowerCase();
+        this.charUuid = charUuid.toLowerCase();
+        this.device = null;
+        this.characteristic = null;
+        this.rxBuffer = new Uint8Array(0);
+        this.expectedLen = 0;
+        this.expectedType = 0;
+        this.headerReceived = false;
+
+        this.onJsonCallback = null;
+        this.onBinaryCallback = null;
+        this.onDisconnectCallback = null;
+      }
+
+      setOnJson(callback) { this.onJsonCallback = callback; }
+      setOnBinary(callback) { this.onBinaryCallback = callback; }
+      setOnDisconnect(callback) { this.onDisconnectCallback = callback; }
+
+      isConnected() {
+        return this.device && this.device.gatt.connected;
+      }
+
+      async connect(namePrefix = "ESP32-LoRa") {
+        this.device = await navigator.bluetooth.requestDevice({
+          filters: [{ namePrefix: namePrefix }],
+          optionalServices: [this.serviceUuid]
+        });
+
+        this.device.addEventListener('gattserverdisconnected', () => {
+          this.handleDisconnect();
+        });
+
+        const server = await this.device.gatt.connect();
+        const service = await server.getPrimaryService(this.serviceUuid);
+        this.characteristic = await service.getCharacteristic(this.charUuid);
+
+        await this.characteristic.startNotifications();
+        this.characteristic.addEventListener('characteristicvaluechanged', (event) => this.handleReceive(event));
+      }
+
+      async disconnect() {
+        if (this.isConnected()) {
+          await this.device.gatt.disconnect();
+        }
+      }
+
+      handleDisconnect() {
+        this.characteristic = null;
+        this.device = null;
+        this.rxBuffer = new Uint8Array(0);
+        this.headerReceived = false;
+        if (this.onDisconnectCallback) {
+          this.onDisconnectCallback();
+        }
+      }
+
+      handleReceive(event) {
+        const chunk = new Uint8Array(event.target.value.buffer);
+        const tmp = new Uint8Array(this.rxBuffer.length + chunk.length);
+        tmp.set(this.rxBuffer);
+        tmp.set(chunk, this.rxBuffer.length);
+        this.rxBuffer = tmp;
+
+        if (!this.headerReceived && this.rxBuffer.length >= 3) {
+          this.expectedType = this.rxBuffer[0];
+          this.expectedLen = this.rxBuffer[1] | (this.rxBuffer[2] << 8);
+          this.rxBuffer = this.rxBuffer.slice(3);
+          this.headerReceived = true;
+        }
+
+        if (this.headerReceived && this.rxBuffer.length >= this.expectedLen) {
+          const payload = this.rxBuffer.slice(0, this.expectedLen);
+          if (this.expectedType === 0x00) {
+            const text = new TextDecoder().decode(payload);
+            try {
+              const json = JSON.parse(text);
+              if (this.onJsonCallback) this.onJsonCallback(json);
+            } catch (e) {
+              console.error("Error parsing JSON:", e);
+            }
+          } else {
+            if (this.onBinaryCallback) this.onBinaryCallback(this.expectedType, payload);
+          }
+          this.rxBuffer = new Uint8Array(0);
+          this.headerReceived = false;
+        }
+      }
+
+      async sendJson(obj) {
+        if (!this.characteristic) return;
+        const text = JSON.stringify(obj);
+        const payload = new TextEncoder().encode(text);
+        const len = payload.length;
+
+        const buffer = new Uint8Array(3 + len);
+        buffer[0] = 0x00;
+        buffer[1] = len & 0xFF;
+        buffer[2] = (len >> 8) & 0xFF;
+        buffer.set(payload, 3);
+
+        await this.characteristic.writeValueWithResponse(buffer);
+      }
+
+      async sendBinary(type, payload) {
+        if (!this.characteristic) return;
+        const len = payload.length;
+        const buffer = new Uint8Array(3 + len);
+        buffer[0] = type;
+        buffer[1] = len & 0xFF;
+        buffer[2] = (len >> 8) & 0xFF;
+        buffer.set(payload, 3);
+
+        await this.characteristic.writeValueWithResponse(buffer);
+      }
+    }
+
+    const log = (msg, type = '') => {
+      console.log(`[Admin] ${msg}`);
+    };
+
+    // --- TAB LOGIC ---
+    const switchTab = (tabId) => {
+      document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+      document.querySelectorAll('.tab-content').forEach(content => content.classList.remove('active'));
+      if (tabId === 'gw-config') {
+        document.getElementById('tab-btn-gw-config').classList.add('active');
+        document.getElementById('tab-gw-config').classList.add('active');
+      } else if (tabId === 'ble') {
+        document.getElementById('tab-btn-ble').classList.add('active');
+        document.getElementById('tab-ble').classList.add('active');
+      }
+    };
+
+    // --- BLUETOOTH SECURITY CONTEXT CHECK ---
+    if (!window.isSecureContext) {
+      document.getElementById('ble-security-notice').classList.remove('hidden');
+      document.getElementById('gw-ble-security-notice').classList.remove('hidden');
+    }
+
+    // --- GATEWAY CONFIGURATION ---
+    const GW_SERVICE_UUID = "f1e00003-c32a-4b28-86c7-67ab6b5d7a9f";
+    const GW_CHAR_UUID = "f1e00004-c32a-4b28-86c7-67ab6b5d7a9f";
+
+    const gwPipe = new NimBLEDataPipe(GW_SERVICE_UUID, GW_CHAR_UUID);
+    const btnGwConnect = document.getElementById('btn-gw-connect');
+    const gwStatusDot = document.getElementById('gw-status-dot');
+    const gwStatusText = document.getElementById('gw-status-text');
+    const gwConfigForm = document.getElementById('gw-config-form');
+
+    window.generateRandomGwKey = () => {
+      const chars = '0123456789abcdef';
+      let key = '';
+      for (let i = 0; i < 32; i++) {
+        key += chars[Math.floor(Math.random() * 16)];
+      }
+      document.getElementById('gw_aes_key').value = key;
+    };
+
+    const gwUseStatic = document.getElementById('gw_use_static');
+    const gwStaticIpFields = document.getElementById('gw-static-ip-fields');
+    const updateGwStaticFieldsVisibility = () => {
+      if (gwUseStatic.checked) {
+        gwStaticIpFields.style.display = 'block';
+        document.getElementById('gw_local_ip').setAttribute('required', 'true');
+        document.getElementById('gw_gateway_ip').setAttribute('required', 'true');
+        document.getElementById('gw_subnet_mask').setAttribute('required', 'true');
+      } else {
+        gwStaticIpFields.style.display = 'none';
+        document.getElementById('gw_local_ip').removeAttribute('required');
+        document.getElementById('gw_gateway_ip').removeAttribute('required');
+        document.getElementById('gw_subnet_mask').removeAttribute('required');
+      }
+    };
+    gwUseStatic.addEventListener('change', updateGwStaticFieldsVisibility);
+
+    const isHttpMode = window.location.protocol !== 'file:' && 
+                       window.location.hostname !== '' && 
+                       window.location.hostname !== 'localhost' && 
+                       window.location.hostname !== '127.0.0.1';
+
+    if (isHttpMode) {
+      // Hide BLE gateway connection in HTTP mode
+      const bleCard = document.querySelector('#gw-ble-container > .stat-card');
+      if (bleCard) {
+        bleCard.innerHTML = `
+          <h2 style="margin-top:0; font-size: 18px; font-weight: 700;">Secure HTTP Connection (Admin)</h2>
+          <p style="font-size: 13px; color: #94a3b8; margin-bottom: 0;">
+            You are connected directly to the gateway. Configurations are sent via password-secured HTTP requests.
+          </p>
+        `;
+      }
+      gwConfigForm.classList.remove('hidden');
+
+      const loadConfigHttp = async () => {
+        try {
+          const res = await fetch('/api/gw_config');
+          const json = await res.json();
+          document.getElementById('gw_wifi_ssid').value = json.wifi_ssid || '';
+          document.getElementById('gw_wifi_pass').value = json.wifi_pass || '';
+          document.getElementById('gw_admin_pass').value = json.admin_pass || '';
+          document.getElementById('gw_use_static').checked = !!json.use_static;
+          document.getElementById('gw_local_ip').value = json.local_ip || '';
+          document.getElementById('gw_gateway_ip').value = json.gateway_ip || '';
+          document.getElementById('gw_subnet_mask').value = json.subnet_mask || '';
+          document.getElementById('gw_aes_key').value = json.aes_key || '';
+          updateGwStaticFieldsVisibility();
+        } catch (e) {
+          log(`HTTP load error: ${e.message}`, "error");
+        }
+      };
+      loadConfigHttp();
+    }
+
+    gwPipe.setOnJson((json) => {
+      if (json.aes_key) {
+        document.getElementById('gw_wifi_ssid').value = json.wifi_ssid || '';
+        document.getElementById('gw_wifi_pass').value = json.wifi_pass || '';
+        document.getElementById('gw_admin_pass').value = json.admin_pass || '';
+        document.getElementById('gw_use_static').checked = !!json.use_static;
+        document.getElementById('gw_local_ip').value = json.local_ip || '';
+        document.getElementById('gw_gateway_ip').value = json.gateway_ip || '';
+        document.getElementById('gw_subnet_mask').value = json.subnet_mask || '';
+        document.getElementById('gw_aes_key').value = json.aes_key || '';
+        updateGwStaticFieldsVisibility();
+      } else if (json.status === 'saved') {
+        alert("Configuration saved via BLE! The gateway will reboot.");
+      } else if (json.status === 'reseted') {
+        alert("Gateway configuration reset to factory defaults!");
+      }
+    });
+
+    gwPipe.setOnDisconnect(() => {
+      gwStatusDot.className = "dot offline";
+      gwStatusText.innerText = "Disconnected";
+      gwStatusText.style.color = "#ef4444";
+      btnGwConnect.innerText = "Connect to Gateway";
+      if (!isHttpMode) gwConfigForm.classList.add('hidden');
+    });
+
+    btnGwConnect.addEventListener('click', async () => {
+      if (gwPipe.isConnected()) {
+        await gwPipe.disconnect();
+        return;
+      }
+      try {
+        gwStatusDot.className = "dot warning";
+        gwStatusText.innerText = "Searching...";
+        gwStatusText.style.color = "#f59e0b";
+        await gwPipe.connect("ESP32-LoRa-Gateway");
+        gwStatusDot.className = "dot";
+        gwStatusText.innerText = "Connected";
+        gwStatusText.style.color = "#10b981";
+        btnGwConnect.innerText = "Disconnect";
+        gwConfigForm.classList.remove('hidden');
+        await gwPipe.sendJson({ cmd: "get_gw_config" });
+      } catch (err) {
+        log(`Connection error: ${err.message}`, "error");
+        gwPipe.handleDisconnect();
+      }
+    });
+
+    gwConfigForm.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const payload = {
+        wifi_ssid: document.getElementById('gw_wifi_ssid').value.trim(),
+        wifi_pass: document.getElementById('gw_wifi_pass').value.trim(),
+        admin_pass: document.getElementById('gw_admin_pass').value.trim(),
+        use_static: document.getElementById('gw_use_static').checked,
+        local_ip: document.getElementById('gw_local_ip').value.trim(),
+        gateway_ip: document.getElementById('gw_gateway_ip').value.trim(),
+        subnet_mask: document.getElementById('gw_subnet_mask').value.trim(),
+        aes_key: document.getElementById('gw_aes_key').value.trim()
+      };
+
+      if (isHttpMode && !gwPipe.isConnected()) {
+        try {
+          const res = await fetch('/api/gw_config', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+          });
+          const json = await res.json();
+          if (json.status === 'saved') {
+            alert("Configuration saved! The gateway will reboot.");
+          } else {
+            alert("Error saving configuration.");
+          }
+        } catch (err) {
+          alert(`Send error: ${err.message}`);
+        }
+      } else {
+        payload.cmd = "set_gw_config";
+        await gwPipe.sendJson(payload);
+      }
+    });
+
+    document.getElementById('btn-gw-reset').addEventListener('click', async () => {
+      if (!confirm("Are you sure you want to reset the gateway to factory default settings?")) return;
+      if (isHttpMode && !gwPipe.isConnected()) {
+        try {
+          const res = await fetch('/api/gw_reset', { method: 'POST' });
+          const json = await res.json();
+          if (json.status === 'reseted') {
+            alert("Configuration reset successfully! The gateway is rebooting.");
+          }
+        } catch (e) {
+          alert(`Error: ${e.message}`);
+        }
+      } else {
+        await gwPipe.sendJson({ cmd: "reset_gw_config" });
+      }
+    });
+
+    // --- NODE BLE CONFIGURATION ---
+    const SERVICE_UUID = "f1e00001-c32a-4b28-86c7-67ab6b5d7a9f";
+    const CHAR_UUID = "f1e00002-c32a-4b28-86c7-67ab6b5d7a9f";
+
+    const pipe = new NimBLEDataPipe(SERVICE_UUID, CHAR_UUID);
+    const btnConnect = document.getElementById('btn-connect');
+    const statusDot = document.getElementById('status-dot');
+    const statusText = document.getElementById('status-text');
+    const configForm = document.getElementById('config-form');
+
+    const otaFileInput = document.getElementById('ota-file');
+    const otaFileName = document.getElementById('ota-file-name');
+    const btnStartOta = document.getElementById('btn-start-ota');
+    const otaProgressContainer = document.getElementById('ota-progress-container');
+    const otaStatusLabel = document.getElementById('ota-status-label');
+    const otaPercent = document.getElementById('ota-percent');
+    const otaBar = document.getElementById('ota-bar');
+
+    window.generateRandomKey = () => {
+      const chars = '0123456789abcdef';
+      let key = '';
+      for (let i = 0; i < 32; i++) {
+        key += chars[Math.floor(Math.random() * 16)];
+      }
+      document.getElementById('aes_key').value = key;
+    };
+
+    pipe.setOnJson((json) => {
+      if (json.aes_key) {
+        document.getElementById('node_id').value = json.node_id;
+        document.getElementById('node_name').value = json.node_name;
+        document.getElementById('lora_freq').value = json.lora_freq;
+        document.getElementById('lora_bw').value = json.lora_bw.toFixed(1);
+        document.getElementById('lora_sf').value = json.lora_sf;
+        document.getElementById('lora_cr').value = json.lora_cr;
+        document.getElementById('lora_sync').value = '0x' + json.lora_sync.toString(16);
+        document.getElementById('lora_power').value = json.lora_power;
+        document.getElementById('lora_preamble').value = json.lora_preamble;
+        document.getElementById('aes_key').value = json.aes_key;
+        document.getElementById('tx_interval').value = json.tx_interval;
+      } else if (json.status === 'saved') {
+        alert("Configuration saved! The node will reboot.");
+      } else if (json.status === 'reseted') {
+        alert("The node has been reset to factory defaults.");
+      } else if (json.status === 'ota_started') {
+        startOtaTransfer();
+      } else if (json.status === 'ota_error') {
+        alert(`The node rejected the update: ${json.error}`);
+        resetOtaUi();
+      }
+    });
+
+    pipe.setOnDisconnect(() => {
+      statusDot.className = "dot offline";
+      statusText.innerText = "Disconnected";
+      statusText.style.color = "#ef4444";
+      btnConnect.innerText = "Connect to Node";
+      configForm.classList.add('hidden');
+      resetOtaUi();
+    });
+
+    btnConnect.addEventListener('click', async () => {
+      if (pipe.isConnected()) {
+        await pipe.disconnect();
+        return;
+      }
+      try {
+        statusDot.className = "dot warning";
+        statusText.innerText = "Searching...";
+        statusText.style.color = "#f59e0b";
+        await pipe.connect("ESP32-LoRa");
+        statusDot.className = "dot";
+        statusText.innerText = "Connected";
+        statusText.style.color = "#10b981";
+        btnConnect.innerText = "Disconnect";
+        configForm.classList.remove('hidden');
+        await pipe.sendJson({ cmd: "get_config" });
+      } catch (err) {
+        log(`Connection error: ${err.message}`, "error");
+        pipe.handleDisconnect();
+      }
+    });
+
+    configForm.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      let syncStr = document.getElementById('lora_sync').value.trim();
+      let syncVal = syncStr.startsWith('0x') || syncStr.startsWith('0X') ?
+        parseInt(syncStr, 16) : parseInt(syncStr);
+
+      const payload = {
+        cmd: "set_config",
+        node_id: parseInt(document.getElementById('node_id').value),
+        node_name: document.getElementById('node_name').value.trim(),
+        lora_freq: parseFloat(document.getElementById('lora_freq').value),
+        lora_bw: parseFloat(document.getElementById('lora_bw').value),
+        lora_sf: parseInt(document.getElementById('lora_sf').value),
+        lora_cr: parseInt(document.getElementById('lora_cr').value),
+        lora_sync: syncVal,
+        lora_power: parseInt(document.getElementById('lora_power').value),
+        lora_preamble: parseInt(document.getElementById('lora_preamble').value),
+        aes_key: document.getElementById('aes_key').value.trim().toLowerCase(),
+        tx_interval: parseInt(document.getElementById('tx_interval').value)
+      };
+
+      await pipe.sendJson(payload);
+    });
+
+    document.getElementById('btn-reset').addEventListener('click', async () => {
+      if (!confirm("Are you sure you want to reset the node?")) return;
+      await pipe.sendJson({ cmd: "reset_config" });
+    });
+
+    otaFileInput.addEventListener('change', () => {
+      const file = otaFileInput.files[0];
+      if (file) {
+        otaFileName.innerText = file.name + ` (${(file.size / 1024).toFixed(1)} KB)`;
+        btnStartOta.style.display = 'inline-block';
+      } else {
+        otaFileName.innerText = "No file selected";
+        btnStartOta.style.display = 'none';
+      }
+    });
+
+    btnStartOta.addEventListener('click', async () => {
+      const file = otaFileInput.files[0];
+      if (!file) return;
+      if (!confirm("Start node OTA update?")) return;
+      btnStartOta.disabled = true;
+      otaFileInput.disabled = true;
+      otaProgressContainer.style.display = 'block';
+      otaStatusLabel.innerText = "Starting OTA...";
+      otaPercent.innerText = "0%";
+      otaBar.style.width = "0%";
+      const reader = new FileReader();
+      reader.onload = async (e) => {
+        try {
+          const arrayBuffer = e.target.result;
+          const bytes = new Uint8Array(arrayBuffer);
+          await pipe.sendJson({ cmd: "start_ota", size: bytes.length });
+        } catch (err) {
+          alert(`Error sending start_ota: ${err.message}`);
+          resetOtaUi();
+        }
+      };
+      reader.readAsArrayBuffer(file);
+    });
+
+    const startOtaTransfer = async () => {
+      const file = otaFileInput.files[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = async (e) => {
+        try {
+          const arrayBuffer = e.target.result;
+          const bytes = new Uint8Array(arrayBuffer);
+          const totalSize = bytes.length;
+          const chunkSize = 480;
+          let offset = 0;
+
+          while (offset < totalSize) {
+            const size = Math.min(chunkSize, totalSize - offset);
+            const chunk = bytes.slice(offset, offset + size);
+            await pipe.sendBinary(0x02, chunk);
+            offset += size;
+            const percent = Math.floor((offset / totalSize) * 100);
+            otaPercent.innerText = `${percent}%`;
+            otaBar.style.width = `${percent}%`;
+            otaStatusLabel.innerText = `Sent: ${Math.round(offset / 1024)} / ${Math.round(totalSize / 1024)} KB`;
+          }
+          otaStatusLabel.innerText = "Finalizing and rebooting...";
+        } catch (err) {
+          if (offset >= totalSize) {
+            otaStatusLabel.innerText = "Update successful! Rebooting...";
+            alert("OTA update successful! The node is rebooting.");
+            resetOtaUi();
+          } else {
+            alert(`Transfer error: ${err.message}`);
+            resetOtaUi();
+          }
+        }
+      };
+      reader.readAsArrayBuffer(file);
+    };
+
+    const resetOtaUi = () => {
+      btnStartOta.disabled = false;
+      otaFileInput.disabled = false;
+      btnStartOta.style.display = 'none';
+      otaProgressContainer.style.display = 'none';
+      otaFileName.innerText = "No file selected";
+      otaFileInput.value = "";
+    };
+  </script>
+</body>
+</html>

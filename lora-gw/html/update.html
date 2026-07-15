@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Gateway Firmware Update</title>
+  <link rel="stylesheet" href="style.css">
+  <style>
+    .progress-container {
+      display: none;
+      margin: 24px 0;
+      background: rgba(15, 23, 42, 0.6);
+      border: 1px solid rgba(255, 255, 255, 0.05);
+      border-radius: 12px;
+      overflow: hidden;
+      position: relative;
+      height: 24px;
+    }
+    .progress-bar {
+      height: 100%;
+      width: 0%;
+      background: linear-gradient(135deg, #38bdf8 0%, #818cf8 100%);
+      transition: width 0.1s ease;
+    }
+    .progress-text {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      color: #fff;
+      font-size: 12px;
+      font-weight: 600;
+    }
+    .status-msg {
+      margin-top: 16px;
+      font-size: 14px;
+      color: #94a3b8;
+    }
+  </style>
+</head>
+<body class="body-center">
+  <div class="card-update" id="update-card">
+    <h3>Gateway Firmware Update</h3>
+    <form id="upload-form">
+      <div class="file-input-wrapper">
+        <label for="update-file" class="custom-file-upload">
+          Choose firmware file (.bin)
+        </label>
+        <input type="file" id="update-file" name="update" accept=".bin" required onchange="document.getElementById('file-name').innerText = this.files[0] ? this.files[0].name : ''">
+        <div id="file-name" class="file-name">No file selected</div>
+      </div>
+      <button type="submit" class="btn-submit" id="submit-btn">Start Update</button>
+    </form>
+    
+    <div class="progress-container" id="progress-container">
+      <div class="progress-bar" id="progress-bar"></div>
+      <div class="progress-text" id="progress-text">0%</div>
+    </div>
+    
+    <div class="status-msg" id="status-msg"></div>
+    <a href="/" class="btn-back" id="back-link">← Back to Dashboard</a>
+  </div>
+
+  <script>
+    const form = document.getElementById('upload-form');
+    const fileInput = document.getElementById('update-file');
+    const progressContainer = document.getElementById('progress-container');
+    const progressBar = document.getElementById('progress-bar');
+    const progressText = document.getElementById('progress-text');
+    const statusMsg = document.getElementById('status-msg');
+    const backLink = document.getElementById('back-link');
+    const updateCard = document.getElementById('update-card');
+
+    form.addEventListener('submit', function(e) {
+      e.preventDefault();
+      
+      if (!fileInput.files.length) return;
+      
+      const file = fileInput.files[0];
+      const formData = new FormData();
+      formData.append('update', file);
+      
+      form.style.display = 'none';
+      progressContainer.style.display = 'block';
+      backLink.style.display = 'none';
+      statusMsg.innerText = "Uploading firmware...";
+      
+      const xhr = new XMLHttpRequest();
+      xhr.open('POST', '/update', true);
+      
+      xhr.upload.addEventListener('progress', function(e) {
+        if (e.lengthComputable) {
+          const percent = Math.round((e.loaded / e.total) * 100);
+          progressBar.style.width = percent + '%';
+          progressText.innerText = percent + '%';
+          if (percent === 100) {
+            statusMsg.innerText = "Writing to flash memory... Please wait.";
+          }
+        }
+      });
+      
+      xhr.onreadystatechange = function() {
+        if (xhr.readyState === 4) {
+          if (xhr.status === 200 && (xhr.responseText.includes('OK') || xhr.responseText.includes('reussie') || xhr.responseText.includes('réussie') || xhr.responseText.includes('success'))) {
+            updateCard.className = "card-update success";
+            updateCard.innerHTML = `
+              <h3>Update Successful!</h3>
+              <p>Rebooting gateway...</p>
+              <p>Redirecting to dashboard in 5 seconds...</p>
+            `;
+            setTimeout(() => {
+              window.location.href = '/';
+            }, 5000);
+          } else {
+            updateCard.className = "card-update error";
+            updateCard.innerHTML = `
+              <h3>Update Failed</h3>
+              <p>An error occurred during flashing.</p>
+              <p><a href="/update" class="btn-submit" style="display:inline-block; margin-top:12px; text-decoration:none;">Try Again</a></p>
+              <p><a href="/" class="btn-back">Back to Dashboard</a></p>
+            `;
+          }
+        }
+      };
+      
+      xhr.send(formData);
+    });
+  </script>
+</body>
+</html>

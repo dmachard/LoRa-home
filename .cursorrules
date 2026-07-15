@@ -1,0 +1,5 @@
+# AI Rules for esp32-lora-gateway-nodes
+
+*   **Compilation & Flash Guide**: Always refer to [**`DEVELOPMENT.md`**](file:///home/salon/Lab/esp32-lora-gateway-nodes/DEVELOPMENT.md) for compilation workflows, target board FQBNs, and library dependencies.
+*   **System Architecture & Protocols**: Refer to [**`README.md`**](file:///home/salon/Lab/esp32-lora-gateway-nodes/README.md) for data schemas, metrics, and security definitions.
+*   **Coding Constraints**: Do not hardcode credentials. Use NVM (Preferences library) and BLE provisioning workflows as implemented in the source code.
