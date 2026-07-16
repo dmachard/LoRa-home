@@ -2,27 +2,7 @@
 #define HDR_SIZE 9
 #define TAG_SIZE 8
 
-enum ReadingType {
-  TYPE_AHT20_TEMP = 3,
-  TYPE_AHT20_HUM = 4,
-  TYPE_BMP280_TEMP = 5,
-  TYPE_BMP280_PRES = 6,
-  TYPE_BH1750_LUX = 7
-};
-
-struct SensorReading {
-  uint8_t type;
-  int32_t value;
-} __attribute__((packed));
-
-struct SensorPayload {
-  uint8_t count;
-  SensorReading readings[6];
-  uint8_t reset_reason;
-  uint8_t error_code;
-  uint16_t tx_interval;
-  char name[8];
-} __attribute__((packed));
+#include "shared_protocol.h"
 
 void startLoRaMode() {
   Serial.println("--- DÉMARRAGE MODE LORA NORMAL ---");

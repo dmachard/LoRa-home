@@ -73,28 +73,7 @@ uint8_t AES_KEY[16] = {0};
 #define TAG_SIZE 8
 #define HDR_SIZE 9 // node_id(1) + seq(4) + random_id(4)
 
-#define TYPE_DHT22_TEMP  0x01
-#define TYPE_DHT22_HUM   0x02
-#define TYPE_AHT20_TEMP  0x03
-#define TYPE_AHT20_HUM   0x04
-#define TYPE_BMP280_TEMP 0x05
-#define TYPE_BMP280_PRES 0x06
-#define TYPE_BH1750_LUX  0x07
-#define TYPE_BATTERY     0x08
-
-struct __attribute__((packed)) SensorReading {
-  uint8_t type;       // Type de mesure (ex: TYPE_AHT20_TEMP...)
-  int32_t value;      // Valeur brute
-};
-
-struct __attribute__((packed)) SensorPayload {
-  uint8_t count;               // Nombre de mesures dans le tableau (max 6)
-  SensorReading readings[6];   // Tableau des mesures
-  uint8_t reset_reason;
-  uint8_t error_code;
-  uint16_t tx_interval;
-  char name[8];
-};
+#include "shared_protocol.h"
 
 GCM<AES128> gcm;
 uint32_t global_malformed_packets = 0;
