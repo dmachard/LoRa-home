@@ -15,9 +15,7 @@ bool loadConfig() {
     config.lora_sync = 0x12;
     config.lora_power = 10;
     config.lora_preamble = 8;
-    uint8_t default_key[16] = {0x2B, 0x7E, 0x15, 0x16, 0x28, 0xAE, 0xD2, 0xA6,
-                               0xAB, 0xF7, 0x15, 0x88, 0x09, 0xCF, 0x4F, 0x3C};
-    memcpy(config.aes_key, default_key, 16);
+    memset(config.aes_key, 0, 16);
     config.tx_interval = 60;
   } else {
     Serial.println("Configuration NVM chargee !");

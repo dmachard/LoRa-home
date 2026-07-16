@@ -92,6 +92,7 @@ struct __attribute__((packed)) SensorPayload {
   SensorReading readings[6];   // Tableau des mesures
   uint8_t reset_reason;
   uint8_t error_code;
+  uint16_t tx_interval;
   char name[8];
 };
 
@@ -154,6 +155,7 @@ struct NodeData {
   uint8_t type;
   uint8_t last_reset_reason;
   uint8_t last_error_code;
+  uint16_t tx_interval;
   bool seen;
   bool has_sensor;
   bool has_pressure;
@@ -578,6 +580,7 @@ void handleNodesJson() {
     json += "\"packets_count\":" + String(nodes[i].packets_count) + ",";
     json += "\"last_reset_reason\":" + String(nodes[i].last_reset_reason) + ",";
     json += "\"last_error_code\":" + String(nodes[i].last_error_code) + ",";
+    json += "\"tx_interval\":" + String(nodes[i].tx_interval) + ",";
     
     String type_str;
     if (nodes[i].type == 1) type_str = "DHT22";
@@ -943,6 +946,7 @@ void loop() {
             n.last_error_code = current_error_code;
 
             if (is_sensor_payload) {
+              n.tx_interval = sp.tx_interval;
               n.type = 0; // Déterminé par les mesures
               n.has_sensor = false;
               n.has_pressure = false;

@@ -4,6 +4,8 @@ An end-to-end telemetry system featuring a modular **ESP32-C6 Web Gateway** and 
 
 The gateway exports **Prometheus metrics** (`/metrics`) for Grafana visualization and hosts a local configuration and diagnostic dashboard. Both devices store credentials and configuration parameters dynamically inside their **Non-Volatile Memory (NVM)** and support **Web Bluetooth (BLE) provisioning** directly from the local dashboard.
 
+![LoRa Gateway Dashboard](imgs/webinterface.png)
+
 ---
 
 ## Workspace Structure

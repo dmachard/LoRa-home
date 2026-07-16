@@ -20,6 +20,7 @@ struct SensorPayload {
   SensorReading readings[6];
   uint8_t reset_reason;
   uint8_t error_code;
+  uint16_t tx_interval;
   char name[8];
 } __attribute__((packed));
 
@@ -150,6 +151,7 @@ void loopLoRa() {
 
   payload.reset_reason = last_reset_reason;
   payload.error_code = current_error_code;
+  payload.tx_interval = config.tx_interval;
   memset(payload.name, 0, sizeof(payload.name));
   strncpy(payload.name, config.node_name, sizeof(payload.name) - 1);
 

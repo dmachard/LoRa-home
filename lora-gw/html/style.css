@@ -123,7 +123,7 @@ h1 {
 .node-card {
   background: rgba(17, 24, 39, 0.45);
   backdrop-filter: blur(24px);
-  border: 1px solid rgba(16, 185, 129, 0.18); /* Elegant subtle green border for online nodes */
+  border: 1px solid var(--card-border, rgba(255, 255, 255, 0.08));
   border-radius: 20px;
   padding: 24px;
   box-shadow: 0 20px 40px -15px rgba(0, 0, 0, 0.4);
@@ -136,8 +136,8 @@ h1 {
 
 .node-card:hover {
   transform: translateY(-4px);
-  border-color: rgba(16, 185, 129, 0.4);
-  box-shadow: 0 25px 50px -12px rgba(16, 185, 129, 0.12);
+  border-color: var(--card-border-hover, rgba(255, 255, 255, 0.15));
+  box-shadow: 0 25px 50px -12px var(--card-glow, rgba(255, 255, 255, 0.02));
 }
 
 .node-card.offline {
@@ -206,7 +206,6 @@ h1 {
   gap: 28px;
   padding: 20px 0;
   border-top: 1px solid rgba(255, 255, 255, 0.05);
-  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
   margin-bottom: 16px;
 }
 
@@ -260,22 +259,41 @@ h1 {
 /* Radio & status info in card footer */
 .node-footer {
   display: flex;
-  flex-direction: column;
-  gap: 10px;
+  justify-content: space-between;
+  align-items: flex-end;
+  font-size: 11px;
+  color: #64748b;
   margin-top: auto;
   padding-top: 12px;
   border-top: 1px solid rgba(255, 255, 255, 0.04);
 }
 
-.node-radio-info {
+.node-footer-left, .node-footer-right {
   display: flex;
-  gap: 16px;
+  flex-direction: column;
+  gap: 6px;
 }
 
-.node-radio-info span {
+.node-footer-right {
+  align-items: flex-end;
+}
+
+.footer-metric {
   display: flex;
   align-items: center;
   gap: 4px;
+}
+
+.footer-metric b {
+  color: #cbd5e1;
+}
+
+.footer-metric.right-aligned {
+  justify-content: flex-end;
+}
+
+.status-indicator.right-aligned {
+  justify-content: flex-end;
 }
 
 .node-radio-icon {
@@ -284,28 +302,38 @@ h1 {
   color: #64748b;
 }
 
-.node-activity-row {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  font-size: 11px;
-  color: #64748b;
-  width: 100%;
-}
-
-.connection-stats {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-}
-
-.connection-stats span b {
-  color: #cbd5e1;
-}
-
 .stat-divider {
   color: rgba(255, 255, 255, 0.08);
   font-weight: bold;
+}
+
+.radio-badge {
+  font-size: 8px;
+  font-weight: 700;
+  padding: 1px 5px;
+  border-radius: 4px;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  margin-left: 6px;
+  display: inline-block;
+}
+
+.radio-badge.rssi-strong, .radio-badge.snr-clean {
+  background: rgba(16, 185, 129, 0.1);
+  color: #34d399;
+  border: 1px solid rgba(16, 185, 129, 0.15);
+}
+
+.radio-badge.rssi-medium, .radio-badge.snr-noisy {
+  background: rgba(245, 158, 11, 0.1);
+  color: #fbbf24;
+  border: 1px solid rgba(245, 158, 11, 0.15);
+}
+
+.radio-badge.rssi-weak, .radio-badge.snr-poor {
+  background: rgba(239, 68, 68, 0.1);
+  color: #f87171;
+  border: 1px solid rgba(239, 68, 68, 0.15);
 }
 
 /* Status Indicator Dot with Pulse Animation */
