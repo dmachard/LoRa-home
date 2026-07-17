@@ -167,26 +167,30 @@ void updateDisplay() {
         det_items[det_count++] = "Name: " + String(n.name);
       }
       det_items[det_count++] = "Node: ID " + String(node_id);
-      String type_str;
-      if (n.type == 1) type_str = "DHT22";
-      else if (n.type == 2) type_str = "AHT20";
-      else if (n.type == 3) type_str = "BMP280";
-      else if (n.type == 4) type_str = "Multi";
-      else type_str = "Unknown";
-      det_items[det_count++] = "Type: " + type_str;
+      String sensors_list = "";
+      for (int j = 0; j < n.readings_count; j++) {
+        uint8_t t = n.readings[j].type;
+        ReadingTypeDefinition def = getReadingDefinition(t);
+        String type_name = "";
+        if (strstr(def.name, "temperature") != nullptr) type_name = "Temp";
+        else if (strstr(def.name, "humidity") != nullptr) type_name = "Hum";
+        else if (strstr(def.name, "pressure") != nullptr) type_name = "Pres";
+        else if (strstr(def.name, "light") != nullptr) type_name = "Lux";
+        else if (strstr(def.name, "battery") != nullptr) type_name = "Batt";
+        else type_name = def.label;
+        
+        if (type_name.length() > 0 && sensors_list.indexOf(type_name) == -1) {
+          sensors_list += type_name + " ";
+        }
+      }
+      sensors_list.trim();
+      det_items[det_count++] = "Sensors: " + (sensors_list.length() > 0 ? sensors_list : "None");
       det_items[det_count++] = "Seq:  " + String(n.seq);
-      if (n.has_sensor) {
-        det_items[det_count++] = "Temp: " + String(n.temperature, 1) + " C";
-        det_items[det_count++] = "Hum:  " + String(n.humidity, 1) + " %";
-      }
-      if (n.has_pressure) {
-        det_items[det_count++] = "Pres: " + String(n.pressure, 1) + " hPa";
-      }
-      if (n.has_light) {
-        det_items[det_count++] = "Lux:  " + String(n.light) + " lx";
-      }
-      if (n.has_battery) {
-        det_items[det_count++] = "Batt: " + String(n.battery) + " mV";
+      for (int j = 0; j < n.readings_count; j++) {
+        uint8_t t = n.readings[j].type;
+        float val = n.readings[j].value;
+        ReadingTypeDefinition def = getReadingDefinition(t);
+        det_items[det_count++] = String(def.label) + ": " + String(val * def.scale, (def.scale < 1.0f ? 1 : 0)) + " " + def.unit;
       }
       det_items[det_count++] = "RSSI: " + String(n.rssi, 0) + " dBm " + String(getRssiBars(n.rssi));
       det_items[det_count++] = "SNR:  " + String(n.snr, 1);

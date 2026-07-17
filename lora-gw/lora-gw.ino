@@ -124,25 +124,13 @@ struct NodeData {
   float rssi;
   float snr;
   float loss_percent;
-  float temperature;
-  float humidity;
-  float pressure;
-  float temp_aht;
-  float temp_bmp;
-  uint16_t light;
-  uint16_t battery;
-  uint8_t type;
   uint8_t last_reset_reason;
   uint8_t last_error_code;
   uint16_t tx_interval;
   bool seen;
-  bool has_sensor;
-  bool has_pressure;
-  bool has_light;
-  bool has_battery;
-  bool has_temp_aht;
-  bool has_temp_bmp;
-  bool has_humidity;
+  
+  uint8_t readings_count;
+  SensorReading readings[6];
 };
 
 NodeData nodes[MAX_NODES];
@@ -184,6 +172,7 @@ WebServer server(8080);
 void loadConfig();
 void setupBLE(bool isConfigured);
 void loopBLE();
+void setupWebServer();
 
 void setup() {
   Serial.begin(115200);
@@ -286,63 +275,8 @@ void setup() {
   }
   updateDisplay();
 
-  server.on("/admin", handleAdminHtml);
-  server.on("/metrics", handleMetrics);
-  server.on("/api/nodes", handleNodesJson);
-  server.on("/api/gw_config", HTTP_GET, handleGetConfigHttp);
-  server.on("/api/gw_config", HTTP_POST, handleSaveConfigHttp);
-  server.on("/api/gw_reset", HTTP_POST, handleResetConfigHttp);
-  server.on("/", handleRootHtml);
+  setupWebServer();
 
-  // Page de formulaire d'upload OTA
-  server.on("/update", HTTP_GET, []() {
-    if (!server.authenticate("admin", admin_pass.c_str())) {
-      server.requestAuthentication(BASIC_AUTH, "LoRa Gateway Admin", "Authentification requise");
-      return;
-    }
-    server.sendHeader("Connection", "close");
-    server.send(200, "text/html", UPDATE_HTML);
-  });
-
-  // Handler POST pour le flashage
-  server.on("/update", HTTP_POST, []() {
-    if (!server.authenticate("admin", admin_pass.c_str())) {
-      server.requestAuthentication(BASIC_AUTH, "LoRa Gateway Admin", "Authentification requise");
-      return;
-    }
-    server.sendHeader("Connection", "close");
-    if (Update.hasError()) {
-      server.send(200, "text/html", UPDATE_ERR_HTML);
-    } else {
-      server.send(200, "text/html", UPDATE_OK_HTML);
-      delay(1000);
-      ESP.restart();
-    }
-  }, []() {
-    if (!server.authenticate("admin", admin_pass.c_str())) {
-      return;
-    }
-    HTTPUpload& upload = server.upload();
-    esp_task_wdt_reset(); // Securité watchdog pendant le transfert de fichier
-    if (upload.status == UPLOAD_FILE_START) {
-      Serial.printf("Mise a jour: %s\n", upload.filename.c_str());
-      if (!Update.begin(UPDATE_SIZE_UNKNOWN)) {
-        Update.printError(Serial);
-      }
-    } else if (upload.status == UPLOAD_FILE_WRITE) {
-      if (Update.write(upload.buf, upload.currentSize) != upload.currentSize) {
-        Update.printError(Serial);
-      }
-    } else if (upload.status == UPLOAD_FILE_END) {
-      if (Update.end(true)) {
-        Serial.printf("Reussi: %u octets. Redemarrage...\n", upload.totalSize);
-      } else {
-        Update.printError(Serial);
-      }
-    }
-  });
-
-  server.begin();
 
   esp_task_wdt_config_t wdt_config = {.timeout_ms = WDT_TIMEOUT_S * 1000,
                                       .idle_core_mask = 0,
@@ -427,76 +361,13 @@ void loop() {
 
             if (is_sensor_payload) {
               n.tx_interval = sp.tx_interval;
-              n.type = 0; // Déterminé par les mesures
-              n.has_sensor = false;
-              n.has_pressure = false;
-              n.has_light = false;
-              n.has_battery = false;
-              n.has_temp_aht = false;
-              n.has_temp_bmp = false;
-              n.has_humidity = false;
-
               memset(n.name, 0, sizeof(n.name));
               strncpy(n.name, sp.name, sizeof(n.name) - 1);
 
-              for (int j = 0; j < sp.count && j < 6; j++) {
-                switch (sp.readings[j].type) {
-                  case TYPE_DHT22_TEMP:
-                    n.temperature = sp.readings[j].value / 100.0f;
-                    n.has_sensor = true;
-                    if (n.type == 0) n.type = 1; // DHT22
-                    break;
-                  case TYPE_DHT22_HUM:
-                    n.humidity = sp.readings[j].value / 100.0f;
-                    n.has_sensor = true;
-                    n.has_humidity = true;
-                    if (n.type == 0) n.type = 1; // DHT22
-                    break;
-                  case TYPE_AHT20_TEMP:
-                    n.temperature = sp.readings[j].value / 100.0f;
-                    n.temp_aht = sp.readings[j].value / 100.0f;
-                    n.has_sensor = true;
-                    n.has_temp_aht = true;
-                    if (n.type == 0) n.type = 2; // AHT20
-                    break;
-                  case TYPE_AHT20_HUM:
-                    n.humidity = sp.readings[j].value / 100.0f;
-                    n.has_sensor = true;
-                    n.has_humidity = true;
-                    if (n.type == 0) n.type = 2; // AHT20
-                    break;
-                  case TYPE_BMP280_TEMP:
-                    n.temperature = sp.readings[j].value / 100.0f;
-                    n.temp_bmp = sp.readings[j].value / 100.0f;
-                    n.has_sensor = true;
-                    n.has_temp_bmp = true;
-                    if (n.type != 0 && n.type != 3) n.type = 4; // Multi
-                    else if (n.type == 0) n.type = 3; // BMP280
-                    break;
-                  case TYPE_BMP280_PRES:
-                    n.pressure = sp.readings[j].value / 10.0f;
-                    n.has_pressure = true;
-                    if (n.type != 0 && n.type != 3) n.type = 4; // Multi
-                    else if (n.type == 0) n.type = 3; // BMP280
-                    break;
-                  case TYPE_BH1750_LUX:
-                    n.light = (uint16_t)sp.readings[j].value;
-                    n.has_light = true;
-                    break;
-                  case TYPE_BATTERY:
-                    n.battery = (uint16_t)sp.readings[j].value;
-                    n.has_battery = true;
-                    break;
-                }
-              }
+              n.readings_count = min((int)sp.count, 6);
+              memcpy(n.readings, sp.readings, n.readings_count * sizeof(SensorReading));
             } else {
-              n.has_sensor = false;
-              n.has_pressure = false;
-              n.has_light = false;
-              n.has_battery = false;
-              n.has_temp_aht = false;
-              n.has_temp_bmp = false;
-              n.has_humidity = false;
+              n.readings_count = 0;
               Serial.printf("Node %d | Payload ignoré car taille inattendue : "
                             "recu=%d bytes\n",
                             node_id, payload_len);

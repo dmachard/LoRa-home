@@ -15,22 +15,12 @@ void handleMetrics() {
   out += "# TYPE lora_auth_failures counter\n";
   out += "# HELP lora_reboots Total node reboots detected\n";
   out += "# TYPE lora_reboots counter\n";
-  out += "# HELP lora_temperature_celsius Temperature from node\n";
-  out += "# TYPE lora_temperature_celsius gauge\n";
-  out += "# HELP lora_humidity_percent Humidity from node\n";
-  out += "# TYPE lora_humidity_percent gauge\n";
-  out += "# HELP lora_pressure_hpa Atmospheric pressure in hPa\n";
-  out += "# TYPE lora_pressure_hpa gauge\n";
-  out += "# HELP lora_light_lux Light level in Lux\n";
-  out += "# TYPE lora_light_lux gauge\n";
-  out += "# HELP lora_battery_millivolts Node battery voltage in mV\n";
-  out += "# TYPE lora_battery_millivolts gauge\n";
   out += "# HELP lora_node_reset_reason Last ESP Reset Reason (1=POWERON)\n";
   out += "# TYPE lora_node_reset_reason gauge\n";
   out += "# HELP lora_node_error_code Node Error Code (0=OK)\n";
   out += "# TYPE lora_node_error_code gauge\n";
-  out += "# HELP lora_global_malformed_packets_total Total malformed packets "
-         "received\n";
+  out += "# HELP lora_sensor_reading Generic LoRa sensor reading\n";
+  out += "# TYPE lora_sensor_reading gauge\n";
   out += "# HELP lora_global_malformed_packets_total Total malformed packets "
          "received\n";
   out += "# TYPE lora_global_malformed_packets_total counter\n";
@@ -86,27 +76,18 @@ void handleMetrics() {
     snprintf(line, sizeof(line), "lora_node_error_code%s %u\n", label,
              nodes[i].last_error_code);
     out += line;
-    if (nodes[i].has_sensor) {
-      snprintf(line, sizeof(line), "lora_temperature_celsius%s %.2f\n", label,
-               nodes[i].temperature);
-      out += line;
-      snprintf(line, sizeof(line), "lora_humidity_percent%s %.2f\n", label,
-               nodes[i].humidity);
-      out += line;
-    }
-    if (nodes[i].has_pressure) {
-      snprintf(line, sizeof(line), "lora_pressure_hpa%s %.2f\n", label,
-               nodes[i].pressure);
-      out += line;
-    }
-    if (nodes[i].has_light) {
-      snprintf(line, sizeof(line), "lora_light_lux%s %u\n", label,
-               nodes[i].light);
-      out += line;
-    }
-    if (nodes[i].has_battery) {
-      snprintf(line, sizeof(line), "lora_battery_millivolts%s %u\n", label,
-               nodes[i].battery);
+    for (int j = 0; j < nodes[i].readings_count; j++) {
+      char sensor_label[128];
+      float val = nodes[i].readings[j].value;
+      uint8_t t = nodes[i].readings[j].type;
+      ReadingTypeDefinition def = getReadingDefinition(t);
+      
+      if (nodes[i].name[0] != '\0') {
+        snprintf(sensor_label, sizeof(sensor_label), "{node=\"%d\",name=\"%s\",sensor=\"%s\"}", i, nodes[i].name, def.name);
+      } else {
+        snprintf(sensor_label, sizeof(sensor_label), "{node=\"%d\",sensor=\"%s\"}", i, def.name);
+      }
+      snprintf(line, sizeof(line), "lora_sensor_reading%s %.2f\n", sensor_label, val * def.scale);
       out += line;
     }
   }
@@ -147,32 +128,23 @@ void handleNodesJson() {
     json += "\"last_reset_reason\":" + String(nodes[i].last_reset_reason) + ",";
     json += "\"last_error_code\":" + String(nodes[i].last_error_code) + ",";
     json += "\"tx_interval\":" + String(nodes[i].tx_interval) + ",";
-    
-    String type_str;
-    if (nodes[i].type == 1) type_str = "DHT22";
-    else if (nodes[i].type == 2) type_str = "AHT20";
-    else if (nodes[i].type == 3) type_str = "BMP280";
-    else if (nodes[i].type == 4) type_str = "Multi";
-    else type_str = "Unknown";
-    json += "\"type\":\"" + type_str + "\",";
 
-    json += "\"has_sensor\":" + String(nodes[i].has_sensor ? "true" : "false") + ",";
-    json += "\"temperature\":" + String(nodes[i].temperature, 2) + ",";
-    json += "\"has_humidity\":" + String(nodes[i].has_humidity ? "true" : "false") + ",";
-    json += "\"humidity\":" + String(nodes[i].humidity, 2) + ",";
-    json += "\"has_temp_aht\":" + String(nodes[i].has_temp_aht ? "true" : "false") + ",";
-    json += "\"temp_aht\":" + String(nodes[i].temp_aht, 2) + ",";
-    json += "\"has_temp_bmp\":" + String(nodes[i].has_temp_bmp ? "true" : "false") + ",";
-    json += "\"temp_bmp\":" + String(nodes[i].temp_bmp, 2) + ",";
-
-    json += "\"has_pressure\":" + String(nodes[i].has_pressure ? "true" : "false") + ",";
-    json += "\"pressure\":" + String(nodes[i].pressure, 1) + ",";
-
-    json += "\"has_light\":" + String(nodes[i].has_light ? "true" : "false") + ",";
-    json += "\"light\":" + String(nodes[i].light) + ",";
-
-    json += "\"has_battery\":" + String(nodes[i].has_battery ? "true" : "false") + ",";
-    json += "\"battery\":" + String(nodes[i].battery) + ",";
+    json += "\"readings\":[";
+    for (int j = 0; j < nodes[i].readings_count; j++) {
+      if (j > 0) json += ",";
+      uint8_t t = nodes[i].readings[j].type;
+      float val = nodes[i].readings[j].value;
+      ReadingTypeDefinition def = getReadingDefinition(t);
+      
+      json += "{";
+      json += "\"type\":" + String(t) + ",";
+      json += "\"name\":\"" + String(def.name) + "\",";
+      json += "\"label\":\"" + String(def.label) + "\",";
+      json += "\"value\":" + String(val * def.scale, 2) + ",";
+      json += "\"unit\":\"" + String(def.unit) + "\"";
+      json += "}";
+    }
+    json += "],";
 
     uint32_t elapsed_sec = (now - nodes[i].last_seen_ms) / 1000;
     json += "\"elapsed_sec\":" + String(elapsed_sec);
@@ -264,3 +236,64 @@ void handleGetConfigHttp() {
 void handleRootHtml() {
   server.send(200, "text/html", INDEX_HTML);
 }
+
+void setupWebServer() {
+  server.on("/admin", handleAdminHtml);
+  server.on("/metrics", handleMetrics);
+  server.on("/api/nodes", handleNodesJson);
+  server.on("/api/gw_config", HTTP_GET, handleGetConfigHttp);
+  server.on("/api/gw_config", HTTP_POST, handleSaveConfigHttp);
+  server.on("/api/gw_reset", HTTP_POST, handleResetConfigHttp);
+  server.on("/", handleRootHtml);
+
+  // Page de formulaire d'upload OTA
+  server.on("/update", HTTP_GET, []() {
+    if (!server.authenticate("admin", admin_pass.c_str())) {
+      server.requestAuthentication(BASIC_AUTH, "LoRa Gateway Admin", "Authentification requise");
+      return;
+    }
+    server.sendHeader("Connection", "close");
+    server.send(200, "text/html", UPDATE_HTML);
+  });
+
+  // Handler POST pour le flashage
+  server.on("/update", HTTP_POST, []() {
+    if (!server.authenticate("admin", admin_pass.c_str())) {
+      server.requestAuthentication(BASIC_AUTH, "LoRa Gateway Admin", "Authentification requise");
+      return;
+    }
+    server.sendHeader("Connection", "close");
+    if (Update.hasError()) {
+      server.send(200, "text/html", UPDATE_ERR_HTML);
+    } else {
+      server.send(200, "text/html", UPDATE_OK_HTML);
+      delay(1000);
+      ESP.restart();
+    }
+  }, []() {
+    if (!server.authenticate("admin", admin_pass.c_str())) {
+      return;
+    }
+    HTTPUpload& upload = server.upload();
+    esp_task_wdt_reset(); // Securité watchdog pendant le transfert de fichier
+    if (upload.status == UPLOAD_FILE_START) {
+      Serial.printf("Mise a jour: %s\n", upload.filename.c_str());
+      if (!Update.begin(UPDATE_SIZE_UNKNOWN)) {
+        Update.printError(Serial);
+      }
+    } else if (upload.status == UPLOAD_FILE_WRITE) {
+      if (Update.write(upload.buf, upload.currentSize) != upload.currentSize) {
+        Update.printError(Serial);
+      }
+    } else if (upload.status == UPLOAD_FILE_END) {
+      if (Update.end(true)) {
+        Serial.printf("Reussi: %u octets. Redemarrage...\n", upload.totalSize);
+      } else {
+        Update.printError(Serial);
+      }
+    }
+  });
+
+  server.begin();
+}
+
