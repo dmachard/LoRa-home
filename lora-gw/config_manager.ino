@@ -24,9 +24,9 @@ void loadConfig() {
     gateway = IPAddress(prefs.getUInt("gateway_ip", 0));
     subnet = IPAddress(prefs.getUInt("subnet_mask", 0));
     prefs.getBytes("aes_key", AES_KEY, 16);
-    Serial.println("Configuration chargee depuis la NVM !");
+    Serial.println("Configuration loaded from NVM!");
   } else {
-    Serial.println("Pas de configuration en NVM. Utilisation des valeurs par defaut.");
+    Serial.println("No config in NVM. Using default values.");
   }
   prefs.end();
 }
@@ -80,5 +80,5 @@ void saveConfig(const JsonDocument &doc) {
   
   prefs.putBool("configured", true);
   prefs.end();
-  Serial.println("Nouvelle configuration enregistree en NVM !");
+  Serial.println("New configuration saved to NVM!");
 }

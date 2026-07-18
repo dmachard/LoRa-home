@@ -25,7 +25,7 @@ extern Adafruit_SSD1306 display;
 void saveConfig(const JsonDocument &doc);
 
 void setupBLE(bool isConfigured) {
-  // Configurer l'afficheur OLED pour le mode BLE
+  // Configure OLED display for BLE mode
   String mac = WiFi.macAddress();
   mac.replace(":", "");
   String suffix = mac.substring(8);
@@ -38,11 +38,11 @@ void setupBLE(bool isConfigured) {
     display.setCursor(0, 0);
     display.println("[ BLE CONFIG MODE ]");
     display.println("");
-    display.print("Nom: GW-");
+    display.print("Name: GW-");
     display.println(suffix);
     display.println("");
-    display.println("Connectez-vous avec");
-    display.println("le portail web.");
+    display.println("Connect using the");
+    display.println("web portal.");
     display.display();
   }
   
@@ -96,16 +96,16 @@ void setupBLE(bool isConfigured) {
   NimBLEDevice::setPower(ESP_PWR_LVL_P9);
   NimBLEDevice::setSecurityAuth(false, false, true);
 
-  // Configuration publicitaire BLE personnalisée pour Linux/Chrome
+  // Custom BLE advertisement config for Linux/Chrome
   NimBLEAdvertising *pAdvertising = NimBLEDevice::getAdvertising();
-  pAdvertising->stop(); // Arrête la publicité par défaut du DataPipe
+  pAdvertising->stop(); // Stop default DataPipe advertising
   
-  // Données de publicité principales (contient le nom et les flags)
+  // Primary advertisement data (contains name and flags)
   NimBLEAdvertisementData advData;
   advData.setName(devName.c_str());
   advData.setFlags(BLE_HS_ADV_F_DISC_GEN | BLE_HS_ADV_F_BREDR_UNSUP);
   
-  // Données de réponse au scan (contient l'UUID du service)
+  // Scan response data (contains service UUID)
   NimBLEAdvertisementData scanResponseData;
   scanResponseData.setCompleteServices(NimBLEUUID(BLE_GW_SERVICE_UUID));
   
@@ -113,13 +113,13 @@ void setupBLE(bool isConfigured) {
   pAdvertising->setScanResponseData(scanResponseData);
   pAdvertising->start();
   
-  Serial.println("Serveur BLE Gateway configure et actif !");
+  Serial.println("BLE Gateway server configured and active!");
   bleStartMs = millis();
 }
 
 void loopBLE() {
   if (shouldReboot) {
-    Serial.println("Redemarrage de l'ESP32...");
+    Serial.println("Rebooting ESP32...");
     delay(500);
     ESP.restart();
   }

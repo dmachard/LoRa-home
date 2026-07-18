@@ -24,7 +24,7 @@
 
 // LED and Button Config (BOOT button is always GPIO 9 on ESP32-C3)
 #define BUTTON_PIN 9
-int LED_PIN = 8;        // LED monochrome (ex: GPIO 10 sur Xiao ESP32-C3, GPIO 8 sur SuperMini. Mettre -1 si aucune LED)
+int LED_PIN = 8;        // Monochrome LED (e.g. GPIO 10 on Xiao ESP32-C3, GPIO 8 on SuperMini. Set to -1 if no LED)
 
 // Node configuration structure
 struct NodeConfig {
@@ -104,17 +104,17 @@ void setup() {
   Serial.begin(115200);
   delay(1000);
 
-  // Initialisation I2C et scan des capteurs
+  // I2C initialization and sensor scan
   Wire.begin(I2C_SDA, I2C_SCL);
   delay(100);
 
-  // Scan I2C pour AHT20 (0x38)
+  // I2C scan for AHT20 (0x38)
   Wire.beginTransmission(0x38);
   if (Wire.endTransmission() == 0) {
     aht_detected = true;
   }
 
-  // Scan I2C pour BMP280 (0x77 ou 0x76)
+  // I2C scan for BMP280 (0x77 or 0x76)
   Wire.beginTransmission(0x77);
   if (Wire.endTransmission() == 0) {
     bmp_detected = true;
@@ -127,7 +127,7 @@ void setup() {
     }
   }
 
-  // Scan I2C pour TSL2561 (0x39, 0x29 ou 0x49)
+  // I2C scan for TSL2561 (0x39, 0x29 or 0x49)
   Wire.beginTransmission(0x39);
   if (Wire.endTransmission() == 0) {
     tsl_detected = true;
@@ -146,10 +146,10 @@ void setup() {
     }
   }
 
-  Serial.printf("Scanner I2C: AHT20=%d, BMP280=%d (0x%02X), TSL2561=%d (0x%02X)\n",
+  Serial.printf("I2C Scanner: AHT20=%d, BMP280=%d (0x%02X), TSL2561=%d (0x%02X)\n",
                 aht_detected, bmp_detected, bmp_addr, tsl_detected, tsl_addr);
 
-  // Détermine la cause du dernier reset
+  // Determine cause of last reset
   esp_reset_reason_t reason = esp_reset_reason();
   Serial.printf("Reset reason: %d\n", reason);
   switch (reason) {
@@ -164,29 +164,29 @@ void setup() {
     default:              last_reset_reason = RESET_UNKNOWN; break;
   }
 
-  // Génère un ID aléatoire propre à cette session de boot
+  // Generate random ID specific to this boot session
   node_random_id = esp_random();
   Serial.printf("Random Node ID: %08X\n", node_random_id);
 
   if (LED_PIN >= 0) {
     pinMode(LED_PIN, OUTPUT);
-    digitalWrite(LED_PIN, HIGH); // Éteint la LED par défaut
+    digitalWrite(LED_PIN, HIGH); // Turn off LED by default
   }
 
   pinMode(BUTTON_PIN, INPUT_PULLUP);
 
-  // 1. Charge la configuration NVM et récupère le statut
+  // 1. Load NVM config and check status
   bool isConfigured = loadConfig();
 
-  // 2. Vérifie s'il faut forcer le mode configuration (via NVM flag ou bouton BOOT)
+  // 2. Check if config mode should be forced (via NVM flag or BOOT button)
   prefs.begin("lora_cfg", false);
   bool forceConfig = prefs.getBool("force_config", false);
   if (forceConfig) {
-    prefs.putBool("force_config", false); // Consomme le flag pour le prochain reboot
+    prefs.putBool("force_config", false); // Consume flag for next reboot
   }
   prefs.end();
 
-  // Aussi vérifié si le bouton est physiquement enfoncé au boot
+  // Also check if button is physically pressed at boot
   if (digitalRead(BUTTON_PIN) == LOW) {
     forceConfig = true;
   }
@@ -194,14 +194,14 @@ void setup() {
   if (!isConfigured || forceConfig) {
     inConfigMode = true;
     if (forceConfig) {
-      Serial.println("--- DÉMARRAGE MODE BLE CONFIG (Force par bouton BOOT / logiciel) ---");
+      Serial.println("--- STARTING BLE CONFIG MODE (Forced via BOOT button / software) ---");
     } else {
-      Serial.println("--- DÉMARRAGE MODE BLE CONFIG (Non configure) ---");
+      Serial.println("--- STARTING BLE CONFIG MODE (Unconfigured) ---");
     }
     setupBLE(isConfigured);
   } else {
     inConfigMode = false;
-    Serial.println("--- PASSAGE DIRECT EN MODE LORA NORMAL ---");
+    Serial.println("--- ENTERING NORMAL LORA MODE ---");
     startLoRaMode();
   }
 }

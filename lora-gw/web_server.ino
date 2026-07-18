@@ -110,7 +110,7 @@ void handleNodesJson() {
   for (int i = 0; i < MAX_NODES; i++) {
     if (!nodes[i].seen) continue;
     
-    // Cache les nœuds inactifs depuis plus de 5 minutes
+    // Hide inactive nodes for more than 5 minutes
     if (now - nodes[i].last_seen_ms > 300000UL) continue;
 
     if (!first) json += ",";
@@ -166,7 +166,7 @@ void handleNodesJson() {
 
 void handleAdminHtml() {
   if (!server.authenticate("admin", admin_pass.c_str())) {
-    server.requestAuthentication(BASIC_AUTH, "LoRa Gateway Admin", "Authentification requise");
+    server.requestAuthentication(BASIC_AUTH, "LoRa Gateway Admin", "Authentication required");
     return;
   }
   server.send(200, "text/html", ADMIN_HTML);
@@ -174,7 +174,7 @@ void handleAdminHtml() {
 
 void handleSaveConfigHttp() {
   if (!server.authenticate("admin", admin_pass.c_str())) {
-    server.requestAuthentication(BASIC_AUTH, "LoRa Gateway Admin", "Authentification requise");
+    server.requestAuthentication(BASIC_AUTH, "LoRa Gateway Admin", "Authentication required");
     return;
   }
   String body = server.arg("plain");
@@ -193,7 +193,7 @@ void handleSaveConfigHttp() {
 
 void handleResetConfigHttp() {
   if (!server.authenticate("admin", admin_pass.c_str())) {
-    server.requestAuthentication(BASIC_AUTH, "LoRa Gateway Admin", "Authentification requise");
+    server.requestAuthentication(BASIC_AUTH, "LoRa Gateway Admin", "Authentication required");
     return;
   }
   Preferences tempPrefs;
@@ -208,7 +208,7 @@ void handleResetConfigHttp() {
 
 void handleGetConfigHttp() {
   if (!server.authenticate("admin", admin_pass.c_str())) {
-    server.requestAuthentication(BASIC_AUTH, "LoRa Gateway Admin", "Authentification requise");
+    server.requestAuthentication(BASIC_AUTH, "LoRa Gateway Admin", "Authentication required");
     return;
   }
   JsonDocument resp;
@@ -246,20 +246,20 @@ void setupWebServer() {
   server.on("/api/gw_reset", HTTP_POST, handleResetConfigHttp);
   server.on("/", handleRootHtml);
 
-  // Page de formulaire d'upload OTA
+  // OTA upload form page
   server.on("/update", HTTP_GET, []() {
     if (!server.authenticate("admin", admin_pass.c_str())) {
-      server.requestAuthentication(BASIC_AUTH, "LoRa Gateway Admin", "Authentification requise");
+      server.requestAuthentication(BASIC_AUTH, "LoRa Gateway Admin", "Authentication required");
       return;
     }
     server.sendHeader("Connection", "close");
     server.send(200, "text/html", UPDATE_HTML);
   });
 
-  // Handler POST pour le flashage
+  // POST handler for flashing
   server.on("/update", HTTP_POST, []() {
     if (!server.authenticate("admin", admin_pass.c_str())) {
-      server.requestAuthentication(BASIC_AUTH, "LoRa Gateway Admin", "Authentification requise");
+      server.requestAuthentication(BASIC_AUTH, "LoRa Gateway Admin", "Authentication required");
       return;
     }
     server.sendHeader("Connection", "close");
@@ -275,9 +275,9 @@ void setupWebServer() {
       return;
     }
     HTTPUpload& upload = server.upload();
-    esp_task_wdt_reset(); // Securité watchdog pendant le transfert de fichier
+    esp_task_wdt_reset(); // Watchdog safety during file transfer
     if (upload.status == UPLOAD_FILE_START) {
-      Serial.printf("Mise a jour: %s\n", upload.filename.c_str());
+      Serial.printf("Update: %s\n", upload.filename.c_str());
       if (!Update.begin(UPDATE_SIZE_UNKNOWN)) {
         Update.printError(Serial);
       }
@@ -287,7 +287,7 @@ void setupWebServer() {
       }
     } else if (upload.status == UPLOAD_FILE_END) {
       if (Update.end(true)) {
-        Serial.printf("Reussi: %u octets. Redemarrage...\n", upload.totalSize);
+        Serial.printf("Success: %u bytes. Rebooting...\n", upload.totalSize);
       } else {
         Update.printError(Serial);
       }
@@ -296,4 +296,3 @@ void setupWebServer() {
 
   server.begin();
 }
-

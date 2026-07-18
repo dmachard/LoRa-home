@@ -4,14 +4,14 @@ void changePage() {
     if (nodes[i].seen) active_count++;
   }
   
-  int total_pages = active_count + 2; // Overview (1) + Système (1) + N nœuds
+  int total_pages = active_count + 2; // Overview (1) + System (1) + N nodes
   current_page = (current_page + 1) % total_pages;
   scroll_index = 0;
   updateDisplay();
 }
 
 void scrollDown() {
-  // Collecter les nœuds actifs
+  // Collect active nodes
   int active_indices[MAX_NODES];
   int active_count = 0;
   for (int i = 0; i < MAX_NODES; i++) {
@@ -21,7 +21,7 @@ void scrollDown() {
   }
 
   if (current_page == 0) {
-    // Défiler uniquement les nœuds en ligne (moins de 300s)
+    // Scroll only online nodes (less than 300s)
     int online_count = 0;
     uint32_t now = millis();
     for (int i = 0; i < MAX_NODES; i++) {
@@ -37,11 +37,11 @@ void scrollDown() {
     }
   }
   else if (current_page == 1) {
-    // Défiler la liste système
+    // Scroll system list
     scroll_index = (scroll_index + 1) % 6;
   } 
   else {
-    // Défiler les détails du nœud courant (current_page - 2)
+    // Scroll details of current node (current_page - 2)
     scroll_index = scroll_index + 1;
   }
   updateDisplay();
@@ -55,7 +55,7 @@ void updateDisplay() {
   display.setTextColor(SSD1306_WHITE);
   uint32_t now = millis();
 
-  // Collecter les nœuds vus
+  // Collect seen nodes
   int active_indices[MAX_NODES];
   int active_count = 0;
   for (int i = 0; i < MAX_NODES; i++) {
@@ -70,12 +70,12 @@ void updateDisplay() {
   }
 
   if (current_page == 0) {
-    // --- Page 0: Overview (Vue d'ensemble) ---
+    // --- Page 0: Overview ---
     display.setCursor(0, 0);
     display.print("GW LoRa | Nodes");
     display.drawLine(0, 11, 127, 11, SSD1306_WHITE);
 
-    // Collecter uniquement les nœuds actifs (moins de 300s)
+    // Collect only active nodes (less than 300s)
     int online_indices[MAX_NODES];
     int online_count = 0;
     for (int i = 0; i < MAX_NODES; i++) {
@@ -115,7 +115,7 @@ void updateDisplay() {
     }
   } 
   else if (current_page == 1) {
-    // --- Page 1: Système ---
+    // --- Page 1: System ---
     display.setCursor(0, 0);
     display.print("GW LoRa | System");
     display.drawLine(0, 11, 127, 11, SSD1306_WHITE);
@@ -146,7 +146,7 @@ void updateDisplay() {
     }
   }
   else {
-    // --- Page 2+: Détails du Nœud courant ---
+    // --- Page 2+: Details of current Node ---
     int idx = current_page - 2;
     if (idx < active_count) {
       int node_id = active_indices[idx];
@@ -196,7 +196,7 @@ void updateDisplay() {
       det_items[det_count++] = "SNR:  " + String(n.snr, 1);
       det_items[det_count++] = "Reboots:  " + String(n.reboots);
 
-      // Temps écoulé depuis la dernière réception
+      // Elapsed time since last reception
       uint32_t elapsed_sec = (now - n.last_seen_ms) / 1000;
       if (elapsed_sec < 60) {
         det_items[det_count++] = "Seen: " + String(elapsed_sec) + "s ago";
@@ -204,11 +204,11 @@ void updateDisplay() {
         det_items[det_count++] = "Seen: " + String(elapsed_sec / 60) + "m ago";
       }
 
-      // Taux de perte et total des paquets
+      // Loss rate and packets total
       det_items[det_count++] = "Loss: " + String(n.loss_percent, 1) + " %";
       det_items[det_count++] = "Packets: " + String(n.packets_count);
 
-      // Raison de reboot humaine
+      // Human-readable reset reason
       String rst_str;
       switch(n.last_reset_reason) {
         case 1: rst_str = "PowerOn"; break;
@@ -233,4 +233,54 @@ void updateDisplay() {
     }
   }
   display.display();
+}
+
+void handleButtonInteraction() {
+  static bool last_btn_state = HIGH;
+  static uint32_t press_start_time = 0;
+  static bool was_pressed = false;
+
+  bool btn_state = digitalRead(BUTTON_PIN);
+  if (btn_state == LOW && !was_pressed) {
+    press_start_time = millis();
+    was_pressed = true;
+  }
+  else if (btn_state == HIGH && was_pressed) {
+    uint32_t press_duration = millis() - press_start_time;
+    was_pressed = false;
+
+    if (press_duration >= 50) { // Debounce
+      if (press_duration >= 600) {
+        changePage(); // LONG press -> Change page
+      } else {
+        scrollDown(); // SHORT press -> Scroll current page down
+      }
+    }
+  }
+  last_btn_state = btn_state;
+}
+
+void handleDisplayRefresh() {
+  static uint32_t last_display_update = 0;
+  uint32_t update_interval = 2000;
+
+  int online_count = 0;
+  for (int i = 0; i < MAX_NODES; i++) {
+    if (nodes[i].seen) {
+      uint32_t elapsed_sec = (millis() - nodes[i].last_seen_ms) / 1000;
+      if (elapsed_sec < 300) {
+        online_count++;
+      }
+    }
+  }
+
+  // Faster refresh (500ms) to animate search dots
+  if (current_page == 0 && online_count == 0) {
+    update_interval = 500;
+  }
+
+  if (millis() - last_display_update >= update_interval) {
+    last_display_update = millis();
+    updateDisplay();
+  }
 }
