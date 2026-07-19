@@ -13,37 +13,20 @@
     <header>
       <div>
         <h1>LoRa Home Gateway</h1>
-        <div style="font-size:12px; color:#64748b; margin-top:4px;">Real-time Dashboard</div>
+        <div class="header-status-bar">
+          <span class="status-pill" id="gw-nodes-pill"><span class="pill-dot"></span>-- Nodes</span>
+          <span class="status-pill" id="gw-uptime-pill">Up: --</span>
+          <span class="status-pill" id="gw-wifi-pill">WiFi: --</span>
+        </div>
       </div>
-      <div>
+      <div class="header-actions">
         <a href="/metrics" class="btn-metrics" id="btn-metrics">Prometheus Metrics</a>
-        <a href="/admin" class="btn" style="margin-left: 8px;">Administration →</a>
+        <a href="/admin" class="btn">Administration →</a>
       </div>
     </header>
 
     <!-- Dashboard -->
     <div id="tab-dashboard" class="tab-content active">
-      <div class="gw-stats">
-        <div class="gw-stat-card" id="card-uptime">
-          <div class="stat-info">
-            <span class="stat-label">Gateway Uptime</span>
-            <span class="stat-val" id="gw-uptime">--</span>
-          </div>
-        </div>
-
-        <div class="gw-stat-card" id="card-wifi">
-          <div class="stat-info">
-            <span class="stat-label">WiFi Signal</span>
-            <span class="stat-val" id="gw-wifi">--</span>
-          </div>
-          <div class="signal-bars" id="wifi-bars">
-            <div class="signal-bar"></div>
-            <div class="signal-bar"></div>
-            <div class="signal-bar"></div>
-            <div class="signal-bar"></div>
-          </div>
-        </div>
-      </div>
 
       <div class="grid" id="nodes-container">
         <div class="stat-card scanning-card">
@@ -158,28 +141,21 @@
         const response = await fetch('/api/nodes');
         const data = await response.json();
 
-        // Gateway Uptime & WiFi RSSI
+        // Header Status Pills
         if (data.gateway && data.gateway.uptime_sec !== undefined) {
-          document.getElementById('gw-uptime').innerText = formatUptime(data.gateway.uptime_sec);
+          const uptimeEl = document.getElementById('gw-uptime-pill');
+          if (uptimeEl) uptimeEl.innerText = 'Up: ' + formatUptime(data.gateway.uptime_sec);
 
-          const rssi = data.gateway.wifi_rssi;
-          document.getElementById('gw-wifi').innerText = rssi + ' dBm';
+          const wifiEl = document.getElementById('gw-wifi-pill');
+          if (wifiEl) wifiEl.innerText = 'WiFi: ' + data.gateway.wifi_rssi + ' dBm';
+        }
 
-          // Update signal strength bars
-          const bars = document.querySelectorAll('#wifi-bars .signal-bar');
-          let activeCount = 0;
-          if (rssi >= -55) activeCount = 4;
-          else if (rssi >= -70) activeCount = 3;
-          else if (rssi >= -85) activeCount = 2;
-          else if (rssi >= -100) activeCount = 1;
-
-          bars.forEach((bar, idx) => {
-            if (idx < activeCount) {
-              bar.classList.add('active');
-            } else {
-              bar.classList.remove('active');
-            }
-          });
+        const onlineCount = data.nodes ? data.nodes.filter(n => n.elapsed_sec < (n.tx_interval || 60) * 2.5).length : 0;
+        const totalCount = data.nodes ? data.nodes.length : 0;
+        const nodesEl = document.getElementById('gw-nodes-pill');
+        if (nodesEl) {
+          const dotColor = onlineCount > 0 ? '#10b981' : '#ef4444';
+          nodesEl.innerHTML = `<span class="pill-dot" style="background:${dotColor}; box-shadow:0 0 8px ${dotColor}"></span>${onlineCount}/${totalCount} Nodes`;
         }
 
         if (!data.nodes || data.nodes.length === 0) {
@@ -355,7 +331,7 @@
     };
 
     updateData();
-    setInterval(updateData, 5000);
+    setInterval(updateData, 1000);
   </script>
 </body>
 
