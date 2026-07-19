@@ -243,7 +243,6 @@ void updateDisplay() {
 }
 
 void handleButtonInteraction() {
-  static bool last_btn_state = HIGH;
   static uint32_t press_start_time = 0;
   static bool was_pressed = false;
 
@@ -264,7 +263,6 @@ void handleButtonInteraction() {
       }
     }
   }
-  last_btn_state = btn_state;
 }
 
 void handleDisplayRefresh() {

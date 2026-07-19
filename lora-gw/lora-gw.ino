@@ -26,6 +26,7 @@
 // ==========================================
 uint32_t boot_time_ms = 0;
 bool shouldReboot = false;
+uint32_t reboot_requested_ms = 0;
 
 // ==========================================
 // I2C & OLED SCREEN CONFIGURATION
@@ -89,7 +90,7 @@ WebServer server(8080);
 // ==========================================
 
 // Config Manager
-void loadConfig();
+bool loadConfig();
 void saveConfig(const JsonDocument &doc);
 bool checkConfigMode();
 
@@ -158,14 +159,23 @@ void loop() {
     loopBLE();
     return;
   }
-  
+
+  // Non-blocking reboot: trigger 1s after the request to let the HTTP response flush
+  if (shouldReboot) {
+    if (reboot_requested_ms == 0) reboot_requested_ms = millis();
+    if (millis() - reboot_requested_ms >= 1000) {
+      Serial.println("Rebooting ESP32...");
+      ESP.restart();
+    }
+  }
+
   // Normal operational cycle
   esp_task_wdt_reset();      // Reset watchdog timer
-  
+
   if (rxFlag) {
     processLoRaPacket();     // Decode and process received packet on interrupt
   }
-  
+
   server.handleClient();      // Handle incoming HTTP client requests
   handleButtonInteraction();  // Poll button to scroll display pages
   handleDisplayRefresh();     // Periodically refresh the OLED dashboard

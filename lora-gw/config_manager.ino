@@ -11,7 +11,7 @@ extern IPAddress gateway;
 extern IPAddress subnet;
 extern uint8_t AES_KEY[16];
 
-void loadConfig() {
+bool loadConfig() {
   prefs.begin("gw_cfg", false);
   bool configured = prefs.getBool("configured", false);
   
@@ -29,6 +29,7 @@ void loadConfig() {
     Serial.println("No config in NVM. Using default values.");
   }
   prefs.end();
+  return configured;
 }
 
 void saveConfig(const JsonDocument &doc) {
@@ -84,13 +85,8 @@ void saveConfig(const JsonDocument &doc) {
 }
 
 bool checkConfigMode() {
-  loadConfig();
+  bool configured = loadConfig();
 
-  prefs.begin("gw_cfg", false);
-  bool configured = prefs.getBool("configured", false);
-  prefs.end();
-
-  delay(100);
   bool bootButtonPressed = (digitalRead(BUTTON_PIN) == LOW);
 
   if (!configured || bootButtonPressed) {

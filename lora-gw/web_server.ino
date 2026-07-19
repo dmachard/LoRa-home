@@ -111,64 +111,58 @@ void handleMetrics() {
 }
 
 void handleNodesJson() {
-  String json = "{\"nodes\":[";
-  bool first = true;
+  JsonDocument doc;
+  JsonArray nodes_arr = doc["nodes"].to<JsonArray>();
+
   uint32_t now = millis();
   for (int i = 0; i < MAX_NODES; i++) {
     if (!nodes[i].seen) continue;
-    
+
     // Hide inactive nodes for more than 5 minutes
     if (now - nodes[i].last_seen_ms > 300000UL) continue;
 
-    if (!first) json += ",";
-    first = false;
+    JsonObject node = nodes_arr.add<JsonObject>();
+    node["id"]               = i;
+    node["name"]             = nodes[i].name;
+    node["seq"]              = nodes[i].seq;
+    node["rssi"]             = nodes[i].rssi;
+    node["snr"]              = nodes[i].snr;
+    node["reboots"]          = nodes[i].reboots;
+    node["loss_percent"]     = nodes[i].loss_percent;
+    node["packets_count"]    = nodes[i].packets_count;
+    node["last_reset_reason"]= nodes[i].last_reset_reason;
+    node["last_error_code"]  = nodes[i].last_error_code;
+    node["tx_interval"]      = nodes[i].tx_interval;
+    node["elapsed_sec"]      = (now - nodes[i].last_seen_ms) / 1000;
 
-    json += "{";
-    json += "\"id\":" + String(i) + ",";
-    json += "\"name\":\"" + String(nodes[i].name) + "\",";
-    json += "\"seq\":" + String(nodes[i].seq) + ",";
-    json += "\"rssi\":" + String(nodes[i].rssi, 1) + ",";
-    json += "\"snr\":" + String(nodes[i].snr, 1) + ",";
-    json += "\"reboots\":" + String(nodes[i].reboots) + ",";
-    json += "\"loss_percent\":" + String(nodes[i].loss_percent, 1) + ",";
-    json += "\"packets_count\":" + String(nodes[i].packets_count) + ",";
-    json += "\"last_reset_reason\":" + String(nodes[i].last_reset_reason) + ",";
-    json += "\"last_error_code\":" + String(nodes[i].last_error_code) + ",";
-    json += "\"tx_interval\":" + String(nodes[i].tx_interval) + ",";
-
-    json += "\"readings\":[";
+    JsonArray readings_arr = node["readings"].to<JsonArray>();
     for (int j = 0; j < nodes[i].readings_count; j++) {
-      if (j > 0) json += ",";
-      uint8_t t = nodes[i].readings[j].type;
-      float val = nodes[i].readings[j].value;
+      uint8_t t   = nodes[i].readings[j].type;
+      float   val = nodes[i].readings[j].value;
       ReadingTypeDefinition def = getReadingDefinition(t);
-      
-      json += "{";
-      json += "\"type\":" + String(t) + ",";
-      json += "\"name\":\"" + String(def.name) + "\",";
-      json += "\"label\":\"" + String(def.label) + "\",";
-      json += "\"value\":" + String(val * def.scale, 2) + ",";
-      json += "\"unit\":\"" + String(def.unit) + "\"";
-      json += "}";
-    }
-    json += "],";
 
-    uint32_t elapsed_sec = (now - nodes[i].last_seen_ms) / 1000;
-    json += "\"elapsed_sec\":" + String(elapsed_sec);
-    json += "}";
+      JsonObject reading = readings_arr.add<JsonObject>();
+      reading["type"]  = t;
+      reading["name"]  = def.name;
+      reading["label"] = def.label;
+      reading["value"] = val * def.scale;
+      reading["unit"]  = def.unit;
+    }
   }
-  json += "],";
-  json += "\"gateway\":{";
-  json += "\"uptime_sec\":" + String(millis() / 1000) + ",";
-  json += "\"free_heap_kb\":" + String(ESP.getFreeHeap() / 1024) + ",";
-  json += "\"rx_interrupts\":" + String(global_rx_interrupts) + ",";
-  json += "\"malformed_packets\":" + String(global_malformed_packets) + ",";
-  json += "\"wifi_rssi\":" + String(WiFi.RSSI());
-  json += "}";
-  json += "}";
+
+  JsonObject gw = doc["gateway"].to<JsonObject>();
+  gw["uptime_sec"]        = millis() / 1000;
+  gw["free_heap_kb"]      = ESP.getFreeHeap() / 1024;
+  gw["rx_interrupts"]     = global_rx_interrupts;
+  gw["malformed_packets"] = global_malformed_packets;
+  gw["wifi_rssi"]         = WiFi.RSSI();
+
+  String out;
+  out.reserve(2048);
+  serializeJson(doc, out);
 
   server.sendHeader("Access-Control-Allow-Origin", "*");
-  server.send(200, "application/json", json);
+  server.send(200, "application/json", out);
 }
 
 void handleAdminHtml() {
@@ -194,7 +188,6 @@ void handleSaveConfigHttp() {
   saveConfig(doc);
   server.sendHeader("Access-Control-Allow-Origin", "*");
   server.send(200, "application/json", "{\"status\":\"saved\"}");
-  delay(1000);
   shouldReboot = true;
 }
 
@@ -209,7 +202,6 @@ void handleResetConfigHttp() {
   tempPrefs.end();
   server.sendHeader("Access-Control-Allow-Origin", "*");
   server.send(200, "application/json", "{\"status\":\"reseted\"}");
-  delay(1000);
   shouldReboot = true;
 }
 
@@ -274,8 +266,7 @@ void setupWebServer() {
       server.send(200, "text/html", UPDATE_ERR_HTML);
     } else {
       server.send(200, "text/html", UPDATE_OK_HTML);
-      delay(1000);
-      ESP.restart();
+      shouldReboot = true;
     }
   }, []() {
     if (!server.authenticate("admin", admin_pass.c_str())) {

@@ -73,8 +73,6 @@ void setupBLE(bool isConfigured) {
       JsonDocument resp;
       resp["status"] = "saved";
       bleDataPipe->sendJson(resp);
-      
-      delay(1000);
       shouldReboot = true;
     } else if (cmd == "reset_gw_config") {
       Preferences tempPrefs;
@@ -85,8 +83,6 @@ void setupBLE(bool isConfigured) {
       JsonDocument resp;
       resp["status"] = "reseted";
       bleDataPipe->sendJson(resp);
-      
-      delay(1000);
       shouldReboot = true;
     }
   });
@@ -120,7 +116,6 @@ void setupBLE(bool isConfigured) {
 void loopBLE() {
   if (shouldReboot) {
     Serial.println("Rebooting ESP32...");
-    delay(500);
     ESP.restart();
   }
 }
