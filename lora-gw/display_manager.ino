@@ -184,6 +184,7 @@ void updateDisplay() {
         else if (strstr(def.name, "pressure") != nullptr) type_name = "Pres";
         else if (strstr(def.name, "light") != nullptr) type_name = "Lux";
         else if (strstr(def.name, "battery") != nullptr) type_name = "Batt";
+        else if (strstr(def.name, "co2") != nullptr) type_name = "CO2";
         else type_name = def.label;
         
         if (type_name.length() > 0 && sensors_list.indexOf(type_name) == -1) {

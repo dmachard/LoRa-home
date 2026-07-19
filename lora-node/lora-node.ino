@@ -11,6 +11,7 @@
 #include <SPI.h>
 #include <Wire.h>
 #include <esp_task_wdt.h>
+#include <SensirionI2cScd4x.h>
 #include <esp_mac.h>
 
 #define WDT_TIMEOUT_S 30
@@ -83,10 +84,12 @@ ErrorCode current_error_code = ERR_NONE;
 Adafruit_AHTX0* aht = nullptr;
 Adafruit_BMP280* bmp = nullptr;
 Adafruit_TSL2561_Unified* tsl = nullptr;
+SensirionI2cScd4x* scd4x = nullptr;
 
 bool aht_detected = false;
 bool bmp_detected = false;
 bool tsl_detected = false;
+bool scd_detected = false;
 uint8_t bmp_addr = 0x77;
 uint8_t tsl_addr = 0x39;
 SX1278* radio = nullptr;
@@ -146,8 +149,14 @@ void setup() {
     }
   }
 
-  Serial.printf("I2C Scanner: AHT20=%d, BMP280=%d (0x%02X), TSL2561=%d (0x%02X)\n",
-                aht_detected, bmp_detected, bmp_addr, tsl_detected, tsl_addr);
+  // I2C scan for SCD41 (0x62)
+  Wire.beginTransmission(0x62);
+  if (Wire.endTransmission() == 0) {
+    scd_detected = true;
+  }
+
+  Serial.printf("I2C Scanner: AHT20=%d, BMP280=%d (0x%02X), TSL2561=%d (0x%02X), SCD41=%d\n",
+                aht_detected, bmp_detected, bmp_addr, tsl_detected, tsl_addr, scd_detected);
 
   // Determine cause of last reset
   esp_reset_reason_t reason = esp_reset_reason();

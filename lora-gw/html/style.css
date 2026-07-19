@@ -249,6 +249,7 @@ h1 {
 .metric-icon.press { color: #a855f7; }
 .metric-icon.light { color: #eab308; }
 .metric-icon.batt { color: #10b981; }
+.metric-icon.co2 { color: #10b981; }
 
 .metric-value {
   font-size: 22px;

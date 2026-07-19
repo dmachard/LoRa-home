@@ -11,7 +11,8 @@ enum ReadingType {
   TYPE_BMP280_TEMP = 5,
   TYPE_BMP280_PRES = 6,
   TYPE_BH1750_LUX  = 7,
-  TYPE_BATTERY     = 8
+  TYPE_BATTERY     = 8,
+  TYPE_SCD40_CO2   = 9
 };
 
 struct SensorReading {
@@ -46,6 +47,7 @@ inline ReadingTypeDefinition getReadingDefinition(uint8_t type) {
     case TYPE_BMP280_PRES: return {6, "pressure_hpa", "Pressure", "hPa", 0.1f};
     case TYPE_BH1750_LUX:  return {7, "light_lux", "Light", "lux", 1.0f};
     case TYPE_BATTERY:     return {8, "battery_millivolts", "Battery", "mV", 1.0f};
+    case TYPE_SCD40_CO2:   return {9, "co2_ppm", "CO2", "ppm", 1.0f};
     default:               return {type, "unknown_raw", "Unk", "", 1.0f};
   }
 }

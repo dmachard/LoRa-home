@@ -78,6 +78,7 @@ Reading types are standardized via the following enumeration:
 | `6` | `TYPE_BMP280_PRES` | BMP280 | Atmospheric Pressure | raw / 10.0f (hPa) |
 | `7` | `TYPE_BH1750_LUX` | BH1750 | Light Intensity | raw (Lux) |
 | `8` | `TYPE_BATTERY` | Internal | Battery Voltage | raw (mV) |
+| `9` | `TYPE_SCD40_CO2` | SCD40/SCD41 | CO2 Concentration | raw (ppm) |
 
 ---
 
@@ -88,4 +89,4 @@ To avoid transmitting floating-point numbers (which are bandwidth-expensive and 
 *   **Temperatures:** Sent as `float × 100` (e.g., $23.45 \text{ °C} \rightarrow 2345$).
 *   **Humidity:** Sent as `float × 100` (e.g., $45.67 \text{ \%} \rightarrow 4567$).
 *   **Pressure:** Sent as `float × 10` (e.g., $1013.25 \text{ hPa} \rightarrow 10132$, i.e., Pa / 10).
-*   **Lux & Battery Voltage:** Sent as raw integers with no scaling (e.g., $4200 \text{ mV} \rightarrow 4200$).
+*   **Lux, Battery Voltage & CO2:** Sent as raw integers with no scaling (e.g., $4200 \text{ mV} \rightarrow 4200$, $850 \text{ ppm} \rightarrow 850$).

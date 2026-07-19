@@ -48,6 +48,7 @@ void setupBLE(bool isConfigured) {
       if (aht_detected) active_sensors.add("AHT20");
       if (bmp_detected) active_sensors.add("BMP280");
       if (tsl_detected) active_sensors.add("TSL2561");
+      if (scd_detected) active_sensors.add("SCD41");
 
       bleDataPipe->sendJson(res);
     }

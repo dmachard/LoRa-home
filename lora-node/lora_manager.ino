@@ -57,6 +57,21 @@ void startLoRaMode() {
     }
   }
 
+  if (scd_detected) {
+    scd4x = new SensirionI2cScd4x();
+    scd4x->begin(Wire, 0x62);
+    scd4x->stopPeriodicMeasurement();
+    uint16_t error = scd4x->startPeriodicMeasurement();
+    if (!error) {
+      Serial.println("SCD41 sensor initialized successfully!");
+    } else {
+      Serial.println("SCD41 initialization failed!");
+      scd_detected = false;
+      delete scd4x;
+      scd4x = nullptr;
+    }
+  }
+
   SPI.begin(SPI_SCK, SPI_MISO, SPI_MOSI, 10);
 
   radio = new SX1278(new Module(10, 1, 0, -1));
@@ -126,6 +141,28 @@ void loopLoRa() {
       payload.count++;
     } else {
       Serial.println("TSL2561 read failed");
+    }
+  }
+
+  // 4. Read SCD41
+  if (scd_detected && scd4x != nullptr) {
+    bool isDataReady = false;
+    scd4x->getDataReadyStatus(isDataReady);
+    if (isDataReady) {
+      uint16_t co2 = 0;
+      float temp = 0.0f;
+      float hum = 0.0f;
+      uint16_t error = scd4x->readMeasurement(co2, temp, hum);
+      if (!error && co2 > 0) {
+        Serial.printf("SCD41: CO2=%dppm | T=%.2f°C | H=%.2f%%\n", co2, temp, hum);
+        if (payload.count < 6) {
+          payload.readings[payload.count].type = TYPE_SCD40_CO2;
+          payload.readings[payload.count].value = (int32_t)co2;
+          payload.count++;
+        }
+      } else {
+        Serial.println("SCD41 read failed");
+      }
     }
   }
 
