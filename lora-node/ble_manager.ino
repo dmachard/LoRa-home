@@ -78,10 +78,8 @@ void setupBLE(bool isConfigured) {
       // Ensure no previous OTA session is still active/suspended
       if (Update.isRunning()) {
         Serial.println("A previous OTA session is still running. Aborting old session...");
-        Update.abort();
-      } else {
-        Update.abort(); // Unconditional safety call to reset the Update class
       }
+      Update.abort(); // Reset the Update class instance
 
       // Partition diagnostics
       Serial.println("--- ESP32 partition list ---");

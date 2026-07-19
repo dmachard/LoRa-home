@@ -15,13 +15,13 @@ enum ReadingType {
 };
 
 struct SensorReading {
-  uint8_t type;       // Type de mesure (ex: TYPE_AHT20_TEMP...)
-  int32_t value;      // Valeur brute
+  uint8_t type;       // Measurement type (e.g., TYPE_AHT20_TEMP...)
+  int32_t value;      // Raw value
 } __attribute__((packed));
 
 struct SensorPayload {
-  uint8_t count;               // Nombre de mesures dans le tableau (max 6)
-  SensorReading readings[6];   // Tableau des mesures
+  uint8_t count;               // Number of readings in array (max 6)
+  SensorReading readings[6];   // Readings array
   uint8_t reset_reason;
   uint8_t error_code;
   uint16_t tx_interval;
