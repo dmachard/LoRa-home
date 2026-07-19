@@ -23,6 +23,11 @@
 #define I2C_SDA 3
 #define I2C_SCL 4
 
+// LoRa Radio Hardware selection (1 = SX1278, 2 = SX1262)
+#ifndef LORA_HARDWARE_CHIP
+#define LORA_HARDWARE_CHIP 2
+#endif
+
 // LED and Button Config (BOOT button is always GPIO 9 on ESP32-C3)
 #define BUTTON_PIN 9
 int LED_PIN = 8;        // Monochrome LED (e.g. GPIO 10 on Xiao ESP32-C3, GPIO 8 on SuperMini. Set to -1 if no LED)
@@ -38,6 +43,7 @@ struct NodeConfig {
   uint8_t lora_sync;
   int8_t lora_power;
   uint16_t lora_preamble;
+  uint8_t lora_chip; // 0 = Auto, 1 = SX1278, 2 = SX1262
   uint8_t aes_key[16];
   uint16_t tx_interval;
 };
@@ -92,7 +98,7 @@ bool tsl_detected = false;
 bool scd_detected = false;
 uint8_t bmp_addr = 0x77;
 uint8_t tsl_addr = 0x39;
-SX1278* radio = nullptr;
+PhysicalLayer* radio = nullptr;
 GCM<AES128> gcm;
 
 // Forward Declarations
@@ -187,6 +193,11 @@ void setup() {
   // 1. Load NVM config and check status
   bool isConfigured = loadConfig();
 
+  // Fallback for legacy NVM value 0 (Auto)
+  if (config.lora_chip == 0) {
+    config.lora_chip = LORA_HARDWARE_CHIP; // 2 for SX1262
+  }
+
   // 2. Check if config mode should be forced (via NVM flag or BOOT button)
   prefs.begin("lora_cfg", false);
   bool forceConfig = prefs.getBool("force_config", false);
@@ -195,9 +206,19 @@ void setup() {
   }
   prefs.end();
 
-  // Also check if button is physically pressed at boot
-  if (digitalRead(BUTTON_PIN) == LOW) {
-    forceConfig = true;
+  // 3. Give 1.5s boot window allowing user to press BOOT button to enter BLE mode
+  Serial.println("Press BOOT button (GPIO 9) to enter BLE Config Mode...");
+  uint32_t startCheck = millis();
+  while (millis() - startCheck < 1500) {
+    if (digitalRead(BUTTON_PIN) == LOW) {
+      delay(50);
+      if (digitalRead(BUTTON_PIN) == LOW) {
+        forceConfig = true;
+        Serial.println("BOOT button press detected during startup window!");
+        break;
+      }
+    }
+    delay(20);
   }
 
   if (!isConfigured || forceConfig) {

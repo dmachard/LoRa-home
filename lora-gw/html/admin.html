@@ -95,10 +95,17 @@
             </div>
           </div>
 
-          <!-- AES Encryption Key -->
+          <!-- Gateway Hardware & Radio Card -->
           <div class="stat-card">
-            <h3 style="margin-top:0; font-size: 15px; font-weight: 700; color: #38bdf8; border-bottom:1px solid rgba(255,255,255,0.05); padding-bottom:10px; margin-bottom:15px;">LoRa Security (AES-GCM Encryption)</h3>
+            <h3 style="margin-top:0; font-size: 15px; font-weight: 700; color: #38bdf8; border-bottom:1px solid rgba(255,255,255,0.05); padding-bottom:10px; margin-bottom:15px;">Gateway Radio Hardware</h3>
             <div class="form-group">
+              <label for="gw_lora_chip">Gateway Transceiver Chip</label>
+              <select id="gw_lora_chip" required>
+                <option value="2">SX1262 (CS=10, DIO1=13, RST=11, BUSY=12)</option>
+                <option value="1">SX1278 (CS=10, DIO0=1, RST=0)</option>
+              </select>
+            </div>
+            <div class="form-group" style="margin-top:16px;">
               <label for="gw_aes_key">Shared AES Key (32 hex chars / 16 bytes)</label>
               <input type="text" id="gw_aes_key" maxlength="32" minlength="32" required placeholder="Hexadecimal AES Key">
             </div>
@@ -160,6 +167,13 @@
             <!-- LoRa Radio Settings Card -->
             <div class="stat-card">
               <h3 style="margin-top:0; font-size: 15px; font-weight: 700; color: #38bdf8; border-bottom:1px solid rgba(255,255,255,0.05); padding-bottom:10px; margin-bottom:15px;">LoRa Radio Settings</h3>
+              <div class="form-group" style="margin-bottom:12px;">
+                <label for="lora_chip">LoRa Radio Chip</label>
+                <select id="lora_chip" required>
+                  <option value="2">SX1262 (433MHz / 868MHz)</option>
+                  <option value="1">SX1278 (433MHz)</option>
+                </select>
+              </div>
               <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
                 <div class="form-group">
                   <label for="lora_freq">Frequency (MHz)</label>
@@ -456,6 +470,7 @@
           document.getElementById('gw_local_ip').value = json.local_ip || '';
           document.getElementById('gw_gateway_ip').value = json.gateway_ip || '';
           document.getElementById('gw_subnet_mask').value = json.subnet_mask || '';
+          document.getElementById('gw_lora_chip').value = json.lora_chip || 2;
           document.getElementById('gw_aes_key').value = json.aes_key || '';
           updateGwStaticFieldsVisibility();
         } catch (e) {
@@ -474,6 +489,7 @@
         document.getElementById('gw_local_ip').value = json.local_ip || '';
         document.getElementById('gw_gateway_ip').value = json.gateway_ip || '';
         document.getElementById('gw_subnet_mask').value = json.subnet_mask || '';
+        document.getElementById('gw_lora_chip').value = json.lora_chip || 2;
         document.getElementById('gw_aes_key').value = json.aes_key || '';
         updateGwStaticFieldsVisibility();
       } else if (json.status === 'saved') {
@@ -523,6 +539,7 @@
         local_ip: document.getElementById('gw_local_ip').value.trim(),
         gateway_ip: document.getElementById('gw_gateway_ip').value.trim(),
         subnet_mask: document.getElementById('gw_subnet_mask').value.trim(),
+        lora_chip: parseInt(document.getElementById('gw_lora_chip').value),
         aes_key: document.getElementById('gw_aes_key').value.trim()
       };
 
@@ -603,6 +620,7 @@
         document.getElementById('lora_sync').value = '0x' + json.lora_sync.toString(16);
         document.getElementById('lora_power').value = json.lora_power;
         document.getElementById('lora_preamble').value = json.lora_preamble;
+        document.getElementById('lora_chip').value = json.lora_chip || 2;
         document.getElementById('aes_key').value = json.aes_key;
         document.getElementById('tx_interval').value = json.tx_interval;
       } else if (json.status === 'saved') {
@@ -665,6 +683,7 @@
         lora_sync: syncVal,
         lora_power: parseInt(document.getElementById('lora_power').value),
         lora_preamble: parseInt(document.getElementById('lora_preamble').value),
+        lora_chip: parseInt(document.getElementById('lora_chip').value),
         aes_key: document.getElementById('aes_key').value.trim().toLowerCase(),
         tx_interval: parseInt(document.getElementById('tx_interval').value)
       };

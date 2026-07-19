@@ -36,6 +36,7 @@ void setupBLE(bool isConfigured) {
       res["lora_sync"] = config.lora_sync;
       res["lora_power"]    = config.lora_power;
       res["lora_preamble"] = config.lora_preamble;
+      res["lora_chip"]     = config.lora_chip;
 
       char hexKey[33] = {0};
       for (int i = 0; i < 16; i++) {

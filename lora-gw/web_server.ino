@@ -218,6 +218,7 @@ void handleGetConfigHttp() {
   resp["local_ip"] = local_IP.toString();
   resp["gateway_ip"] = gateway.toString();
   resp["subnet_mask"] = subnet.toString();
+  resp["lora_chip"] = gw_lora_chip;
   
   char keyHex[33];
   for (int i = 0; i < 16; i++) {

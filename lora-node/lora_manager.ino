@@ -74,19 +74,47 @@ void startLoRaMode() {
 
   SPI.begin(SPI_SCK, SPI_MISO, SPI_MOSI, 10);
 
-  radio = new SX1278(new Module(10, 1, 0, -1));
-
-  Serial.println("Initializing SX1278 module...");
-  int state = radio->begin(config.lora_freq, config.lora_bw, config.lora_sf,
-                           config.lora_cr, config.lora_sync, config.lora_power,
-                           config.lora_preamble);
-  if (state == RADIOLIB_ERR_NONE) {
-    Serial.println("SX1278 initialized successfully!");
-  } else {
-    Serial.printf("SX1278 initialization failed. Error code: %d\n", state);
-    while (true) {
-      esp_task_wdt_reset();
+  if (config.lora_chip == 2) {
+    Serial.println("Initializing SX1262 (CS=10, DIO1=8, RST=0, BUSY=5)...");
+    Module* mod = new Module(10, 8, 0, 5);
+    SX1262* radio62 = new SX1262(mod);
+    esp_task_wdt_reset();
+    int state = radio62->begin(config.lora_freq, config.lora_bw, config.lora_sf,
+                               config.lora_cr, config.lora_sync, config.lora_power,
+                               config.lora_preamble);
+    esp_task_wdt_reset();
+    if (state == RADIOLIB_ERR_NONE) {
+      Serial.println("SX1262 initialized successfully!");
+      radio = radio62;
+    } else {
+      Serial.printf("SX1262 initialization failed! Error code: %d\n", state);
+      Serial.println("Entering BLE Config mode due to radio initialization error...");
+      prefs.begin("lora_cfg", false);
+      prefs.putBool("force_config", true);
+      prefs.end();
       delay(1000);
+      ESP.restart();
+    }
+  } else {
+    Serial.println("Initializing SX1278 (CS=10, DIO0=1, RST=0)...");
+    Module* mod = new Module(10, 1, 0, -1);
+    SX1278* radio78 = new SX1278(mod);
+    esp_task_wdt_reset();
+    int state = radio78->begin(config.lora_freq, config.lora_bw, config.lora_sf,
+                               config.lora_cr, config.lora_sync, config.lora_power,
+                               config.lora_preamble);
+    esp_task_wdt_reset();
+    if (state == RADIOLIB_ERR_NONE) {
+      Serial.println("SX1278 initialized successfully!");
+      radio = radio78;
+    } else {
+      Serial.printf("SX1278 initialization failed! Error code: %d\n", state);
+      Serial.println("Entering BLE Config mode due to radio initialization error...");
+      prefs.begin("lora_cfg", false);
+      prefs.putBool("force_config", true);
+      prefs.end();
+      delay(1000);
+      ESP.restart();
     }
   }
 }

@@ -16,6 +16,7 @@ bool loadConfig() {
     config.lora_sync = 0x12;
     config.lora_power = 10;
     config.lora_preamble = 8;
+    config.lora_chip = 2; // 1 = SX1278, 2 = SX1262
     memset(config.aes_key, 0, 16);
     config.tx_interval = 60;
   } else {
@@ -29,14 +30,15 @@ bool loadConfig() {
     config.lora_sync = prefs.getUChar("lora_sync", 0x12);
     config.lora_power = prefs.getChar("lora_power", 10);
     config.lora_preamble = prefs.getUShort("lora_preamble", 8);
+    config.lora_chip = prefs.getUChar("lora_chip", 2);
     prefs.getBytes("aes_key", config.aes_key, 16);
     config.tx_interval = prefs.getUShort("tx_interval", 60);
   }
 
   prefs.end();
 
-  Serial.printf("Config: ID=%d, Name=%s, Freq=%.2f, SF=%d, BW=%.1f\n",
-                config.node_id, config.node_name, config.lora_freq, config.lora_sf, config.lora_bw);
+  Serial.printf("Config: ID=%d, Name=%s, Chip=%d (0=Auto,1=1278,2=1262), Freq=%.2f, SF=%d, BW=%.1f\n",
+                config.node_id, config.node_name, config.lora_chip, config.lora_freq, config.lora_sf, config.lora_bw);
 
   return isConfigured;
 }
@@ -53,6 +55,7 @@ void saveConfig(const JsonDocument &doc) {
   if (doc.containsKey("lora_sync")) prefs.putUChar("lora_sync", doc["lora_sync"].as<uint8_t>());
   if (doc.containsKey("lora_power")) prefs.putChar("lora_power", doc["lora_power"].as<int8_t>());
   if (doc.containsKey("lora_preamble")) prefs.putUShort("lora_preamble", doc["lora_preamble"].as<uint16_t>());
+  if (doc.containsKey("lora_chip")) prefs.putUChar("lora_chip", doc["lora_chip"].as<uint8_t>());
   if (doc.containsKey("tx_interval")) prefs.putUShort("tx_interval", doc["tx_interval"].as<uint16_t>());
 
   if (doc.containsKey("aes_key")) {

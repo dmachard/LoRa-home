@@ -24,24 +24,29 @@
 #define SCREEN_ADDRESS 0x3C
 
 // ==========================================
-// LORA PHYSICAL TRANSCEIVER PIN CONFIG
+// LORA PHYSICAL TRANSCEIVER CHIP & PIN CONFIG
+// 1 = SX1278, 2 = SX1262
 // ==========================================
+#ifndef LORA_HARDWARE_CHIP
+#define LORA_HARDWARE_CHIP 2
+#endif
+
 #define SPI_SCK 6
 #define SPI_MISO 2
 #define SPI_MOSI 7
 #define LORA_CS 10
+#define LORA_DIO0 1
+#define LORA_DIO1 13
 #define LORA_RST 11
 #define LORA_BUSY 12
-#define LORA_DIO1 13
 
 // ==========================================
-// LORA RF CONFIGURATION (SX1262)
+// LORA RF CONFIGURATION
 // ==========================================
 #define LORA_FREQ 433.0
 #define LORA_BW 125.0
 #define LORA_SF 9
 #define LORA_CR 5
-#define LORA_SYNC RADIOLIB_SX126X_SYNC_WORD_PRIVATE
 #define LORA_POWER 14
 #define LORA_PREAMBLE 8
 

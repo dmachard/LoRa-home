@@ -1,4 +1,5 @@
-SX1262 radio = new Module(LORA_CS, LORA_DIO1, LORA_RST, LORA_BUSY);
+extern uint8_t gw_lora_chip;
+PhysicalLayer* radio = nullptr;
 volatile bool rxFlag = false;
 void IRAM_ATTR onReceive() { rxFlag = true; }
 
@@ -52,19 +53,19 @@ void processLoRaPacket() {
   rxFlag = false;
   global_rx_interrupts++;
   uint8_t frame[64];
-  int state = radio.readData(frame, sizeof(frame));
-  int len = radio.getPacketLength();
+  int state = radio->readData(frame, sizeof(frame));
+  int len = radio->getPacketLength();
 
   if (state != RADIOLIB_ERR_NONE) {
     global_malformed_packets++;
-    radio.startReceive();
+    radio->startReceive();
     return;
   }
 
   if (len < HDR_SIZE + TAG_SIZE) {
     global_malformed_packets++;
     Serial.printf("Packet too short: %d bytes\n", len);
-    radio.startReceive();
+    radio->startReceive();
     return;
   }
 
@@ -72,7 +73,7 @@ void processLoRaPacket() {
   if (node_id >= MAX_NODES) {
     global_unknown_nodes++;
     Serial.printf("Node %d | UNKNOWN NODE\n", node_id);
-    radio.startReceive();
+    radio->startReceive();
     return;
   }
 
@@ -82,7 +83,7 @@ void processLoRaPacket() {
   if (payload_len > sizeof(payload)) {
     global_malformed_packets++;
     Serial.printf("Node %d | Packet too large (%d bytes)\n", node_id, len);
-    radio.startReceive();
+    radio->startReceive();
     return;
   }
 
@@ -90,7 +91,7 @@ void processLoRaPacket() {
   if (!gcm_decrypt(frame, len, payload, sizeof(payload))) {
     n.auth_failures++;
     Serial.printf("Node %d | AUTH FAILED\n", node_id);
-    radio.startReceive();
+    radio->startReceive();
     return;
   }
 
@@ -124,7 +125,7 @@ void processLoRaPacket() {
       resetWindow(n, seq);
     } else if (seq == n.seq) {
       // Duplicate packet within the same boot session -> ignore
-      radio.startReceive();
+      radio->startReceive();
       return;
     } else {
       updateWindow(n, seq);
@@ -136,8 +137,8 @@ void processLoRaPacket() {
   n.seen = true;
   n.seq = seq;
   n.last_random_id = random_id;
-  n.rssi = radio.getRSSI();
-  n.snr = radio.getSNR();
+  n.rssi = radio->getRSSI();
+  n.snr = radio->getSNR();
   n.last_seen_ms = millis();
   n.packets_count++;
   n.last_reset_reason = current_reset_reason;
@@ -157,7 +158,7 @@ void processLoRaPacket() {
 
   last_active_node_id = node_id;
   updateDisplay();
-  radio.startReceive();
+  radio->startReceive();
 }
 
 void initLoRa() {
@@ -168,10 +169,30 @@ void initLoRa() {
 
   SPI.begin(SPI_SCK, SPI_MISO, SPI_MOSI);
 
-  int state = radio.begin(LORA_FREQ, LORA_BW, LORA_SF, LORA_CR, LORA_SYNC,
-                          LORA_POWER, LORA_PREAMBLE);
-  if (state != RADIOLIB_ERR_NONE) {
-    Serial.printf("Init failed: %d\n", state);
+  int state = RADIOLIB_ERR_UNKNOWN;
+
+  if (gw_lora_chip == 2) {
+    Serial.println("Initializing Gateway Radio: SX1262...");
+    Module* mod = new Module(LORA_CS, LORA_DIO1, LORA_RST, LORA_BUSY);
+    SX1262* radio62 = new SX1262(mod);
+    state = radio62->begin(LORA_FREQ, LORA_BW, LORA_SF, LORA_CR, RADIOLIB_SX126X_SYNC_WORD_PRIVATE,
+                           LORA_POWER, LORA_PREAMBLE);
+    if (state == RADIOLIB_ERR_NONE) {
+      radio = radio62;
+    }
+  } else {
+    Serial.println("Initializing Gateway Radio: SX1278...");
+    Module* mod = new Module(LORA_CS, LORA_DIO0, LORA_RST, -1);
+    SX1278* radio78 = new SX1278(mod);
+    state = radio78->begin(LORA_FREQ, LORA_BW, LORA_SF, LORA_CR, 0x12,
+                           LORA_POWER, LORA_PREAMBLE);
+    if (state == RADIOLIB_ERR_NONE) {
+      radio = radio78;
+    }
+  }
+
+  if (state != RADIOLIB_ERR_NONE || radio == nullptr) {
+    Serial.printf("LoRa Radio Init failed: %d\n", state);
     if (oled_initialized) {
       display.println("LoRa Radio: FAILED!");
       display.printf("Error code: %d\n", state);
@@ -186,6 +207,6 @@ void initLoRa() {
     display.display();
   }
 
-  radio.setDio1Action(onReceive);
-  radio.startReceive();
+  radio->setPacketReceivedAction(onReceive);
+  radio->startReceive();
 }
