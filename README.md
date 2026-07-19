@@ -17,17 +17,6 @@ This project is designed to occupy the sweet spot between simple "proof-of-conce
 
 This system serves as a **production-grade local alternative** providing robust security (AES-128 GCM), dynamic configuration (via BLE Web Provisioning), and cloud-grade observability (Prometheus/Grafana) on budget-friendly single-channel hardware.
 
-### System Strengths & Trade-offs
-
-| Feature | This Project | Standard LoRaWAN | Simple DIY LoRa |
-| :--- | :--- | :--- | :--- |
-| **Hardware Cost** | Low (~$15 Gateway, ~$10 Node) | Medium-High (Gateway >$100) | Low (~$10/device) |
-| **Security** | High (Authenticated AES-GCM + IV) | High (Dual-key AES-128) | None / Weak (Cleartext / raw AES) |
-| **Provisioning** | Dynamic (BLE Portal / NVM) | Over-The-Air Activation (OTAA) | Hardcoded in source code |
-| **Observability** | Native Prometheus Exporter | Network Server Console | Serial Monitor only |
-| **Collisions** | Best effort (Single-channel P2MP) | Excellent (Multi-channel / ADR) | Best effort (Single-channel P2P) |
-| **Complexity** | Low (Standalone local stack) | High (Network & Join Servers) | Minimal |
-
 ---
 
 ## Workspace Structure
@@ -57,22 +46,13 @@ Telemetry node reading environmental sensors and sending GCM-encrypted payloads.
 
 ---
 
-## Security & Packet Format (AES-128 GCM)
+## Documentation
 
-*   **Initialization Vector (IV):** Derived dynamically using the frame's unencrypted header (Node ID, Sequence Number, and Random Session ID) padded with 3 bytes of `0x00` to form a 12-byte IV.
-*   **Authentication Tag:** `8 bytes` appended to the end of the payload.
-
-### Over-The-Air Frame Structure
-
-| Byte Index | Field | Description |
-| :--- | :--- | :--- |
-| `0` | **Node ID** | `uint8_t` Identifier of the transmitting node |
-| `1 - 4` | **Sequence Number** | `uint32_t` Big-endian packet counter |
-| `5 - 8` | **Random Session ID** | `uint32_t` Big-endian node session randomizer (resets on boot) |
-| `9 - ...` | **Encrypted Payload** | Ciphertext of the payload |
-| `End - 7` to `End` | **GCM Tag** | `8 bytes` auth tag |
+*   [**Protocol Specification**](./doc/protocol.md): Binary frame format, `SensorPayload` structure, sensor type IDs, and value scaling rules.
+*   [**Security Model**](./doc/security.md): AES-128 GCM details, IV construction, replay protection, and BLE provisioning flow.
 
 ---
+
 
 ## Prerequisites & Installation
 

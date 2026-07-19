@@ -2,162 +2,163 @@
 import os
 import re
 
+
+def minify_css(css):
+    """Full-pass CSS minifier."""
+    # 1. Remove block comments
+    css = re.sub(r'/\*.*?\*/', '', css, flags=re.DOTALL)
+    # 2. Collapse all whitespace (newlines, tabs, multiple spaces) to one space
+    css = re.sub(r'\s+', ' ', css)
+    # 3. Remove spaces around structural characters
+    css = re.sub(r'\s*([{}:;,>~+])\s*', r'\1', css)
+    # 4. Remove trailing semicolon before closing brace (saves ~1 byte/rule)
+    css = re.sub(r';}', '}', css)
+    # 5. Remove leading zeros from decimals: 0.5 -> .5
+    css = re.sub(r'(?<![0-9])0\.([0-9])', r'.\1', css)
+    # 6. Remove units from explicit zero values: 0px -> 0, 0em -> 0, etc.
+    css = re.sub(r'(?<![0-9])0(px|em|rem|vw|vh|pt|cm|mm|in|ch|ex)', r'0', css)
+    # 7. Lowercase hex color codes
+    css = re.sub(r'#[0-9a-fA-F]{3,8}', lambda m: m.group().lower(), css)
+    # 8. Shorten 6-char hex to 3-char where pairs match (#aabbcc -> #abc)
+    css = re.sub(
+        r'#([0-9a-f])\1([0-9a-f])\2([0-9a-f])\3(?![0-9a-f])',
+        lambda m: f'#{m.group(1)}{m.group(2)}{m.group(3)}',
+        css
+    )
+    return css.strip()
+
+
+def minify_js(js):
+    """Basic JS minifier: strips comments and collapses whitespace."""
+    lines = []
+    for line in js.splitlines():
+        stripped = line.strip()
+        if stripped.startswith('//'):
+            continue
+        # Strip inline comments but avoid stripping URLs
+        if ' //' in stripped and 'http://' not in stripped and 'https://' not in stripped:
+            stripped = stripped.split(' //', 1)[0].strip()
+        if stripped:
+            lines.append(stripped)
+    js = '\n'.join(lines)
+    js = re.sub(r'/\*.*?\*/', '', js, flags=re.DOTALL)
+    js = re.sub(r'[ \t]+', ' ', js)
+    return js.strip()
+
+
 def minify_html(html, html_dir):
-    # 1. Resolve and inject <link rel="stylesheet" href="style.css">
+    # 1. Resolve and inline <link rel="stylesheet" href="style.css">
     style_path = os.path.join(html_dir, "style.css")
     if os.path.exists(style_path):
         with open(style_path, "r", encoding="utf-8") as f:
             css_raw = f.read()
-        # Simple CSS minifier
-        css_min = re.sub(r'/\*.*?\*/', '', css_raw, flags=re.DOTALL)
-        css_min = re.sub(r'\s+', ' ', css_min)
-        css_min = re.sub(r'\s*([\{\};:,])\s*', r'\1', css_min)
-        
-        # Replace the link tag with the inline style block
-        link_pattern = re.compile(r'<link\s+rel=["\']stylesheet["\']\s+href=["\']style\.css["\']\s*/?>', re.IGNORECASE)
-        html = link_pattern.sub(f'<style>{css_min.strip()}</style>', html)
+        css_min = minify_css(css_raw)
+        css_original_size = len(css_raw)
+        css_minified_size = len(css_min)
+        link_pattern = re.compile(
+            r'<link\s+rel=["\']stylesheet["\']\s+href=["\']style\.css["\']\s*/?>', re.IGNORECASE
+        )
+        html = link_pattern.sub(f'<style>{css_min}</style>', html)
+        print(f"  CSS inlined: {css_original_size} -> {css_minified_size} bytes "
+              f"({(1 - css_minified_size/css_original_size)*100:.1f}% reduction)")
 
     # 2. Remove HTML comments
     html = re.sub(r'<!--.*?-->', '', html, flags=re.DOTALL)
-    
+
     scripts = []
     styles = []
-    
-    # 3. Minify inline CSS and save to placeholder
+
+    # 3. Minify and stash inline <style> blocks
     def css_replacer(match):
-        css = match.group(1)
-        css = re.sub(r'/\*.*?\*/', '', css, flags=re.DOTALL)
-        css = re.sub(r'\s+', ' ', css)
-        css = re.sub(r'\s*([\{\};:,])\s*', r'\1', css)
+        minified = minify_css(match.group(1))
         placeholder = f"___STYLE_PLACEHOLDER_{len(styles)}___"
-        styles.append(f'<style>{css.strip()}</style>')
+        styles.append(f'<style>{minified}</style>')
         return placeholder
-    
     html = re.compile(r'<style>(.*?)</style>', re.DOTALL | re.IGNORECASE).sub(css_replacer, html)
-    
-    # 4. Minify inline JS and save to placeholder
+
+    # 4. Minify and stash inline <script> blocks
     def js_replacer(match):
-        js = match.group(1)
-        lines = []
-        for line in js.splitlines():
-            stripped = line.strip()
-            # Skip full comment lines
-            if stripped.startswith('//'):
-                continue
-            # Basic comment removal (avoiding stripping URLs)
-            if ' //' in stripped and 'http://' not in stripped and 'https://' not in stripped:
-                parts = stripped.split(' //', 1)
-                stripped = parts[0].strip()
-            if stripped:
-                lines.append(stripped)
-        
-        # We join with newlines to ensure semicolons are not bypassed
-        js = '\n'.join(lines)
-        js = re.sub(r'/\*.*?\*/', '', js, flags=re.DOTALL)
-        js = re.sub(r'[ \t]+', ' ', js)
+        minified = minify_js(match.group(1))
         placeholder = f"___SCRIPT_PLACEHOLDER_{len(scripts)}___"
-        scripts.append(f'<script>{js.strip()}</script>')
+        scripts.append(f'<script>{minified}</script>')
         return placeholder
-        
     html = re.compile(r'<script>(.*?)</script>', re.DOTALL | re.IGNORECASE).sub(js_replacer, html)
-    
-    # 5. Remove multiple spaces and newlines outside tag contents
+
+    # 5. Collapse whitespace between HTML tags
     html = re.sub(r'>\s+<', '><', html)
     html = re.sub(r'\s+', ' ', html)
-    
-    # 6. Restore styles and scripts
+
+    # 6. Restore stashed styles and scripts
     for i, style_content in enumerate(styles):
         html = html.replace(f"___STYLE_PLACEHOLDER_{i}___", style_content)
     for i, script_content in enumerate(scripts):
         html = html.replace(f"___SCRIPT_PLACEHOLDER_{i}___", script_content)
-        
+
     return html.strip()
+
+
+def process_html(src_path, dst_path, html_dir, guard_name, var_name):
+    if not os.path.exists(src_path):
+        print(f"WARNING: {src_path} not found!")
+        return
+    with open(src_path, "r", encoding="utf-8") as f:
+        content = f.read()
+    original_size = len(content)
+    print(f"\n[{os.path.basename(src_path)}] HTML source: {original_size} bytes")
+    minified = minify_html(content, html_dir)
+    final_size = len(minified)
+    net = final_size - original_size
+    sign = '+' if net >= 0 else ''
+    print(f"  Final bundle: {final_size} bytes (HTML+CSS+JS, {sign}{net} vs HTML-only source)")
+    with open(dst_path, "w", encoding="utf-8") as f:
+        f.write(f"#ifndef {guard_name}\n")
+        f.write(f"#define {guard_name}\n\n")
+        f.write("#include <pgmspace.h>\n\n")
+        f.write(f"const char {var_name}[] PROGMEM = R\"rawliteral(\n")
+        f.write(minified)
+        f.write("\n)rawliteral\";\n\n")
+        f.write(f"#endif // {guard_name}\n")
+    print(f"  -> {os.path.basename(dst_path)} written")
+
 
 def main():
     script_dir = os.path.dirname(os.path.abspath(__file__))
     html_dir = os.path.join(script_dir, "html")
-    
-    # 1. Generate index_html.h
-    index_html_path = os.path.join(html_dir, "index.html")
-    index_h_path = os.path.join(script_dir, "index_html.h")
-    
-    if os.path.exists(index_html_path):
-        with open(index_html_path, "r", encoding="utf-8") as f:
-            index_content = f.read()
-            
-        original_size = len(index_content)
-        minified_content = minify_html(index_content, html_dir)
-        minified_size = len(minified_content)
-        savings = original_size - minified_size
-        
-        with open(index_h_path, "w", encoding="utf-8") as f_out:
-            f_out.write("#ifndef INDEX_HTML_H\n")
-            f_out.write("#define INDEX_HTML_H\n\n")
-            f_out.write("#include <pgmspace.h>\n\n")
-            f_out.write("const char INDEX_HTML[] PROGMEM = R\"rawliteral(\n")
-            f_out.write(minified_content)
-            f_out.write("\n)rawliteral\";\n\n")
-            f_out.write("#endif // INDEX_HTML_H\n")
-        print(f"Generated index_html.h (Minified: {original_size} -> {minified_size} bytes, saved {savings} bytes / {savings/original_size*100:.1f}%)")
-    else:
-        print("WARNING: html/index.html not found!")
 
-    # 1b. Generate admin_html.h
-    admin_html_path = os.path.join(html_dir, "admin.html")
-    admin_h_path = os.path.join(script_dir, "admin_html.h")
-    
-    if os.path.exists(admin_html_path):
-        with open(admin_html_path, "r", encoding="utf-8") as f:
-            admin_content = f.read()
-            
-        original_size = len(admin_content)
-        minified_content = minify_html(admin_content, html_dir)
-        minified_size = len(minified_content)
-        savings = original_size - minified_size
-        
-        with open(admin_h_path, "w", encoding="utf-8") as f_out:
-            f_out.write("#ifndef ADMIN_HTML_H\n")
-            f_out.write("#define ADMIN_HTML_H\n\n")
-            f_out.write("#include <pgmspace.h>\n\n")
-            f_out.write("const char ADMIN_HTML[] PROGMEM = R\"rawliteral(\n")
-            f_out.write(minified_content)
-            f_out.write("\n)rawliteral\";\n\n")
-            f_out.write("#endif // ADMIN_HTML_H\n")
-        print(f"Generated admin_html.h (Minified: {original_size} -> {minified_size} bytes, saved {savings} bytes / {savings/original_size*100:.1f}%)")
-    else:
-        print("WARNING: html/admin.html not found!")
+    process_html(
+        os.path.join(html_dir, "index.html"),
+        os.path.join(script_dir, "index_html.h"),
+        html_dir, "INDEX_HTML_H", "INDEX_HTML"
+    )
+    process_html(
+        os.path.join(html_dir, "admin.html"),
+        os.path.join(script_dir, "admin_html.h"),
+        html_dir, "ADMIN_HTML_H", "ADMIN_HTML"
+    )
 
-    # 2. Generate update_html.h
+    # update.html: bundled with OK/FAIL inline responses
     update_html_path = os.path.join(html_dir, "update.html")
     update_h_path = os.path.join(script_dir, "update_html.h")
-    
-    # Read and minify file
     up_content = ""
     if os.path.exists(update_html_path):
         with open(update_html_path, "r", encoding="utf-8") as f:
-            up_content = minify_html(f.read(), html_dir)
+            raw = f.read()
+        up_content = minify_html(raw, html_dir)
+        print(f"\n[update.html] -> {len(up_content)} bytes")
     else:
         print("WARNING: html/update.html not found!")
-        
-    with open(update_h_path, "w", encoding="utf-8") as f_out:
-        f_out.write("#ifndef UPDATE_HTML_H\n")
-        f_out.write("#define UPDATE_HTML_H\n\n")
-        f_out.write("#include <pgmspace.h>\n\n")
-        
-        f_out.write("const char UPDATE_HTML[] PROGMEM = R\"rawliteral(\n")
-        f_out.write(up_content)
-        f_out.write("\n)rawliteral\";\n\n")
-        
-        f_out.write("const char UPDATE_ERR_HTML[] PROGMEM = R\"rawliteral(\n")
-        f_out.write("FAIL")
-        f_out.write("\n)rawliteral\";\n\n")
-        
-        f_out.write("const char UPDATE_OK_HTML[] PROGMEM = R\"rawliteral(\n")
-        f_out.write("OK")
-        f_out.write("\n)rawliteral\";\n\n")
-        
-        f_out.write("#endif // UPDATE_HTML_H\n")
-    print("Generated update_html.h (bundled and minified)")
+
+    with open(update_h_path, "w", encoding="utf-8") as f:
+        f.write("#ifndef UPDATE_HTML_H\n#define UPDATE_HTML_H\n\n")
+        f.write("#include <pgmspace.h>\n\n")
+        f.write("const char UPDATE_HTML[] PROGMEM = R\"rawliteral(\n")
+        f.write(up_content)
+        f.write("\n)rawliteral\";\n\n")
+        f.write("const char UPDATE_ERR_HTML[] PROGMEM = R\"rawliteral(\nFAIL\n)rawliteral\";\n\n")
+        f.write("const char UPDATE_OK_HTML[] PROGMEM = R\"rawliteral(\nOK\n)rawliteral\";\n\n")
+        f.write("#endif // UPDATE_HTML_H\n")
+    print(f"  -> update_html.h written")
+
 
 if __name__ == "__main__":
     main()

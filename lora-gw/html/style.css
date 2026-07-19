@@ -85,11 +85,7 @@ h1 {
   font-weight: 700;
 }
 
-.wifi-signal-wrapper {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-}
+
 
 .signal-bars {
   display: flex;
@@ -180,14 +176,7 @@ h1 {
   letter-spacing: -0.02em;
 }
 
-.node-meta {
-  font-size: 11px;
-  color: #64748b;
-  margin-top: 2px;
-  font-weight: 500;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-}
+
 
 .node-badge {
   padding: 4px 12px;
@@ -385,20 +374,7 @@ h1 {
   }
 }
 
-.status-text-on {
-  color: #10b981;
-  font-weight: 600;
-}
 
-.status-text-warning {
-  color: #f59e0b;
-  font-weight: 600;
-}
-
-.status-text-off {
-  color: #ef4444;
-  font-weight: 600;
-}
 
 /* Button & Nav Styles */
 .btn-update {
@@ -719,88 +695,7 @@ input[type="file"] {
   color: #f8fafc;
 }
 
-/* Legend Styling */
-.legend-card {
-  margin-bottom: 24px;
-  background: rgba(17, 24, 39, 0.3);
-  border: 1px solid rgba(255, 255, 255, 0.04);
-  border-radius: 16px;
-  padding: 16px 20px;
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-}
 
-.legend-header {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  font-size: 12px;
-  font-weight: 700;
-  color: #94a3b8;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-}
-
-.legend-icon {
-  width: 14px;
-  height: 14px;
-  color: #94a3b8;
-}
-
-.legend-body {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 24px;
-}
-
-.legend-section {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-}
-
-.legend-section-title {
-  font-size: 11px;
-  font-weight: 700;
-  color: #64748b;
-  text-transform: uppercase;
-  letter-spacing: 0.02em;
-}
-
-.legend-indicators {
-  display: flex;
-  gap: 12px;
-  flex-wrap: wrap;
-}
-
-.legend-tag {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  font-size: 11px;
-  font-weight: 600;
-  color: #94a3b8;
-  padding: 4px 10px;
-  background: rgba(15, 23, 42, 0.4);
-  border-radius: 8px;
-  border: 1px solid rgba(255, 255, 255, 0.02);
-}
-
-.legend-dot {
-  width: 6px;
-  height: 6px;
-  border-radius: 50%;
-}
-
-.legend-tag.strong { border-color: rgba(16, 185, 129, 0.15); }
-.legend-tag.strong .legend-dot { background: #10b981; }
-
-.legend-tag.medium { border-color: rgba(245, 158, 11, 0.15); }
-.legend-tag.medium .legend-dot { background: #f59e0b; }
-
-.legend-tag.weak { border-color: rgba(239, 68, 68, 0.15); }
-.legend-tag.weak .legend-dot { background: #ef4444; }
 
 /* Radar Scanning Animation */
 .radar-container {
