@@ -38,14 +38,14 @@ struct ReadingTypeDefinition {
 
 inline ReadingTypeDefinition getReadingDefinition(uint8_t type) {
   switch(type) {
-    case TYPE_DHT22_TEMP:  return {1, "temperature_celsius", "T(DHT)", "°C", 0.01f};
-    case TYPE_DHT22_HUM:   return {2, "humidity_percent", "H(DHT)", "%", 0.01f};
-    case TYPE_AHT20_TEMP:  return {3, "temperature_celsius", "T(AHT)", "°C", 0.01f};
-    case TYPE_AHT20_HUM:   return {4, "humidity_percent", "H(AHT)", "%", 0.01f};
-    case TYPE_BMP280_TEMP: return {5, "temperature_celsius", "T(BMP)", "°C", 0.01f};
-    case TYPE_BMP280_PRES: return {6, "pressure_hpa", "Pres", "hPa", 0.1f};
-    case TYPE_BH1750_LUX:  return {7, "light_lux", "Lux", "lx", 1.0f};
-    case TYPE_BATTERY:     return {8, "battery_millivolts", "Batt", "mV", 1.0f};
+    case TYPE_DHT22_TEMP:  return {1, "temperature_celsius", "Temperature", "°C", 0.01f};
+    case TYPE_DHT22_HUM:   return {2, "humidity_percent", "Humidity", "%", 0.01f};
+    case TYPE_AHT20_TEMP:  return {3, "temperature_celsius", "Temperature", "°C", 0.01f};
+    case TYPE_AHT20_HUM:   return {4, "humidity_percent", "Humidity", "%", 0.01f};
+    case TYPE_BMP280_TEMP: return {5, "temperature_celsius", "Temperature", "°C", 0.01f};
+    case TYPE_BMP280_PRES: return {6, "pressure_hpa", "Pressure", "hPa", 0.1f};
+    case TYPE_BH1750_LUX:  return {7, "light_lux", "Light", "lux", 1.0f};
+    case TYPE_BATTERY:     return {8, "battery_millivolts", "Battery", "mV", 1.0f};
     default:               return {type, "unknown_raw", "Unk", "", 1.0f};
   }
 }

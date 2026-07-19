@@ -48,8 +48,7 @@
       </div>
 
       <div class="grid" id="nodes-container">
-        <div class="stat-card"
-          style="grid-column: 1/-1; text-align: center; padding: 40px; color: #64748b; justify-content: center;">
+        <div class="stat-card scanning-card">
           <div class="pulse-ring"></div>
           Searching for LoRa signals...
         </div>
@@ -187,7 +186,7 @@
 
         if (!data.nodes || data.nodes.length === 0) {
           nodesContainer.innerHTML = `
-            <div class="stat-card scanning-card" style="grid-column: 1/-1; text-align: center; padding: 60px 40px; color: #94a3b8; justify-content: center; display: flex; flex-direction: column; align-items: center; gap: 16px;">
+            <div class="stat-card scanning-card">
               <div class="radar-container">
                 <div class="radar-circle circle-1"></div>
                 <div class="radar-circle circle-2"></div>
@@ -197,7 +196,7 @@
                   <path d="M12 12m-3 0a3 3 0 1 0 6 0a3 3 0 1 0 -6 0"/>
                 </svg>
               </div>
-              <div class="scanning-text" style="font-weight: 700; font-size: 13px; letter-spacing: 0.05em; text-transform: uppercase; color: #38bdf8; display: flex; align-items: center; gap: 4px;">
+              <div class="scanning-text">
                 <span>Searching for LoRa signals</span><span class="scanning-dots"></span>
               </div>
             </div>`;
@@ -318,7 +317,7 @@
             <div class="node-card ${statusClass}" style="${isOnline ? `--card-border: ${theme.border}; --card-border-hover: ${theme.hoverBorder}; --card-glow: ${theme.glow};` : ''}">
               <div class="node-header">
                 <div class="node-title-group">
-                  <span class="node-name" style="color: ${isOnline ? theme.primary : '#94a3b8'}; font-weight: 800; text-shadow: 0 0 10px ${isOnline ? theme.glow : 'transparent'};">${node.name}</span>
+                  <span class="node-name" style="color: ${isOnline ? theme.primary : '#94a3b8'}; text-shadow: 0 0 10px ${isOnline ? theme.glow : 'transparent'};">${node.name}</span>
                 </div>
               </div>
               

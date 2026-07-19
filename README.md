@@ -6,16 +6,10 @@ The gateway exports **Prometheus metrics** (`/metrics`) for Grafana visualizatio
 
 ![LoRa Gateway Dashboard](imgs/webinterface.png)
 
----
-
-## Project Philosophy
-
 This project is designed to occupy the sweet spot between simple "proof-of-concept" LoRa examples and heavy-duty industrial LoRaWAN deployments:
 
 * **Beyond Basic DIY:** Standard DIY LoRa projects are often insecure (transmitting data in clear text), hardcode credentials into the firmware, lack runtime management interfaces, and omit telemetry monitoring.
 * **Lighter than LoRaWAN:** Full LoRaWAN infrastructures (using gateways and network servers like TTN or ChirpStack) offer professional routing and multi-channel collision avoidance, but they introduce steep setup overhead and require costly multi-channel gateway hardware.
-
-This system serves as a **production-grade local alternative** providing robust security (AES-128 GCM), dynamic configuration (via BLE Web Provisioning), and cloud-grade observability (Prometheus/Grafana) on budget-friendly single-channel hardware.
 
 ---
 
