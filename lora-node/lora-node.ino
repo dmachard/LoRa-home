@@ -12,6 +12,7 @@
 #include <Wire.h>
 #include <esp_task_wdt.h>
 #include <SensirionI2cScd4x.h>
+#include <INA226.h>
 #include <esp_mac.h>
 
 #define WDT_TIMEOUT_S 30
@@ -91,13 +92,16 @@ Adafruit_AHTX0* aht = nullptr;
 Adafruit_BMP280* bmp = nullptr;
 Adafruit_TSL2561_Unified* tsl = nullptr;
 SensirionI2cScd4x* scd4x = nullptr;
+INA226* ina = nullptr;
 
 bool aht_detected = false;
 bool bmp_detected = false;
 bool tsl_detected = false;
 bool scd_detected = false;
+bool ina_detected = false;
 uint8_t bmp_addr = 0x77;
 uint8_t tsl_addr = 0x39;
+uint8_t ina_addr = 0x40;
 PhysicalLayer* radio = nullptr;
 GCM<AES128> gcm;
 
@@ -116,6 +120,19 @@ void setup() {
   // I2C initialization and sensor scan
   Wire.begin(I2C_SDA, I2C_SCL);
   delay(100);
+
+  // Full I2C bus scan log for debugging
+  Serial.print("I2C Bus Scan found devices at: ");
+  int found_count = 0;
+  for (uint8_t address = 1; address < 127; address++) {
+    Wire.beginTransmission(address);
+    if (Wire.endTransmission() == 0) {
+      Serial.printf("0x%02X ", address);
+      found_count++;
+    }
+  }
+  if (found_count == 0) Serial.print("None");
+  Serial.println();
 
   // I2C scan for AHT20 (0x38)
   Wire.beginTransmission(0x38);
@@ -161,8 +178,19 @@ void setup() {
     scd_detected = true;
   }
 
-  Serial.printf("I2C Scanner: AHT20=%d, BMP280=%d (0x%02X), TSL2561=%d (0x%02X), SCD41=%d\n",
-                aht_detected, bmp_detected, bmp_addr, tsl_detected, tsl_addr, scd_detected);
+  // I2C scan for INA226 (0x40 through 0x4F)
+  for (uint8_t addr = 0x40; addr <= 0x4F; addr++) {
+    if (tsl_detected && addr == tsl_addr) continue;
+    Wire.beginTransmission(addr);
+    if (Wire.endTransmission() == 0) {
+      ina_detected = true;
+      ina_addr = addr;
+      break;
+    }
+  }
+
+  Serial.printf("I2C Scanner: AHT20=%d, BMP280=%d (0x%02X), TSL2561=%d (0x%02X), SCD41=%d, INA226=%d (0x%02X)\n",
+                aht_detected, bmp_detected, bmp_addr, tsl_detected, tsl_addr, scd_detected, ina_detected, ina_addr);
 
   // Determine cause of last reset
   esp_reset_reason_t reason = esp_reset_reason();

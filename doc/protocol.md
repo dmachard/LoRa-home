@@ -76,6 +76,7 @@ Reading types are standardized via the following enumeration:
 | `6` | `TYPE_BMP280_PRES` | BMP280 | Atmospheric Pressure | raw / 10.0f (hPa) |
 | `7` | `TYPE_TSL2561_LUX` | TSL2561 | Light Intensity | raw (Lux) |
 | `9` | `TYPE_SCD40_CO2` | SCD40/SCD41 | CO2 Concentration | raw (ppm) |
+| `10` | `TYPE_INA226_VOLT` | INA226 | Bus / Battery Voltage | raw / 1000.0f (V) |
 
 ---
 

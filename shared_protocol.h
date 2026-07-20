@@ -9,7 +9,8 @@ enum ReadingType {
   TYPE_BMP280_TEMP = 5,
   TYPE_BMP280_PRES = 6,
   TYPE_TSL2561_LUX = 7,
-  TYPE_SCD40_CO2   = 9
+  TYPE_SCD40_CO2   = 9,
+  TYPE_INA226_VOLT = 10
 };
 
 struct SensorReading {
@@ -18,8 +19,8 @@ struct SensorReading {
 } __attribute__((packed));
 
 struct SensorPayload {
-  uint8_t count;               // Number of readings in array (max 6)
-  SensorReading readings[6];   // Readings array
+  uint8_t count;               // Number of readings in array (max 10)
+  SensorReading readings[10];  // Readings array
   uint8_t reset_reason;
   uint8_t error_code;
   uint16_t tx_interval;
@@ -42,6 +43,7 @@ inline ReadingTypeDefinition getReadingDefinition(uint8_t type) {
     case TYPE_BMP280_PRES: return {6, "pressure_hpa", "Pressure", "hPa", 0.1f};
     case TYPE_TSL2561_LUX: return {7, "light_lux", "Light", "lux", 1.0f};
     case TYPE_SCD40_CO2:   return {9, "co2_ppm", "CO2", "ppm", 1.0f};
+    case TYPE_INA226_VOLT: return {10, "bus_voltage_volts", "Voltage", "V", 0.001f};
     default:               return {type, "unknown_raw", "Unk", "", 1.0f};
   }
 }

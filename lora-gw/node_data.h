@@ -25,7 +25,7 @@ struct NodeData {
   bool seen;
   
   uint8_t readings_count;
-  SensorReading readings[6];
+  SensorReading readings[10];
 };
 
 #endif // NODE_DATA_H

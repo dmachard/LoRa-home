@@ -52,7 +52,7 @@ void updateWindow(struct NodeData &n, uint32_t seq) {
 void processLoRaPacket() {
   rxFlag = false;
   global_rx_interrupts++;
-  uint8_t frame[64];
+  uint8_t frame[128];
   int state = radio->readData(frame, sizeof(frame));
   int len = radio->getPacketLength();
 
@@ -78,7 +78,7 @@ void processLoRaPacket() {
   }
 
   uint8_t payload_len = len - HDR_SIZE - TAG_SIZE;
-  uint8_t payload[64] = {0};
+  uint8_t payload[128] = {0};
 
   if (payload_len > sizeof(payload)) {
     global_malformed_packets++;
@@ -149,7 +149,7 @@ void processLoRaPacket() {
     memset(n.name, 0, sizeof(n.name));
     strncpy(n.name, sp.name, sizeof(n.name) - 1);
 
-    n.readings_count = min((int)sp.count, 6);
+    n.readings_count = min((int)sp.count, 10);
     memcpy(n.readings, sp.readings, n.readings_count * sizeof(SensorReading));
   } else {
     n.readings_count = 0;

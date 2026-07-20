@@ -72,11 +72,24 @@ void startLoRaMode() {
     }
   }
 
+  if (ina_detected) {
+    ina = new INA226(ina_addr);
+    if (ina->begin()) {
+      ina->setMaxCurrentShunt(3.6, 0.1); // Calibration for 0.1 Ohm shunt resistor (R100) up to 3.6A
+      Serial.println("INA226 sensor initialized successfully!");
+    } else {
+      Serial.println("INA226 initialization failed!");
+      ina_detected = false;
+      delete ina;
+      ina = nullptr;
+    }
+  }
+
   SPI.begin(SPI_SCK, SPI_MISO, SPI_MOSI, 10);
 
   if (config.lora_chip == 2) {
-    Serial.println("Initializing SX1262 (CS=10, DIO1=8, RST=0, BUSY=5)...");
-    Module* mod = new Module(10, 8, 0, 5);
+    Serial.println("Initializing SX1262 (CS=10, DIO1=1, RST=0, BUSY=5)...");
+    Module* mod = new Module(10, 1, 0, 5);
     SX1262* radio62 = new SX1262(mod);
     esp_task_wdt_reset();
     int state = radio62->begin(config.lora_freq, config.lora_bw, config.lora_sf,
@@ -183,7 +196,7 @@ void loopLoRa() {
       uint16_t error = scd4x->readMeasurement(co2, temp, hum);
       if (!error && co2 > 0) {
         Serial.printf("SCD41: CO2=%dppm | T=%.2f°C | H=%.2f%%\n", co2, temp, hum);
-        if (payload.count < 6) {
+        if (payload.count < 10) {
           payload.readings[payload.count].type = TYPE_SCD40_CO2;
           payload.readings[payload.count].value = (int32_t)co2;
           payload.count++;
@@ -194,13 +207,25 @@ void loopLoRa() {
     }
   }
 
+  // 5. Read INA226 (Battery Voltage)
+  if (ina_detected && ina != nullptr) {
+    float v = ina->getBusVoltage(); // Voltage in Volts
+    Serial.printf("INA226: Voltage=%.3fV\n", v);
+
+    if (payload.count < 10) {
+      payload.readings[payload.count].type = TYPE_INA226_VOLT;
+      payload.readings[payload.count].value = (int32_t)(v * 1000.0f); // stored in mV (scale = 0.001 -> V)
+      payload.count++;
+    }
+  }
+
   payload.reset_reason = last_reset_reason;
   payload.error_code = current_error_code;
   payload.tx_interval = config.tx_interval;
   memset(payload.name, 0, sizeof(payload.name));
   strncpy(payload.name, config.node_name, sizeof(payload.name) - 1);
 
-  uint8_t frame[64];
+  uint8_t frame[128];
   uint8_t iv[12] = {0};
 
   frame[0] = config.node_id;
