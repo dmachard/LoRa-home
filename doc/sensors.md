@@ -13,8 +13,6 @@ The **LoRa Home Gateway & Node** ecosystem features plug-and-play **automatic I2
 | **TSL2561** | Ambient Light Intensity | 0.1 to 40,000+ Lux | I2C | `0x39`, `0x29`, `0x49` | `7` (`TYPE_BH1750_LUX`) |
 | **BH1750** | Ambient Light Intensity | 1 to 65,535 Lux | I2C | `0x23` or `0x5C` | `7` (`TYPE_BH1750_LUX`) |
 | **SCD41 / SCD40** | Photoacoustic CO₂ Concentration, Temperature, Humidity | 400 to 5,000+ ppm (±40 ppm + 5%) | I2C | `0x62` | `9` (`TYPE_SCD40_CO2`) |
-| **DHT22 / AM2302** | Temperature, Relative Humidity | -40°C to +80°C (±0.5°C)<br>0% to 100% RH (±2–5%) | 1-Wire Digital | GPIO Pin | `1` (`TYPE_DHT22_TEMP`)<br>`2` (`TYPE_DHT22_HUM`) |
-| **Battery ADC** | Node Supply / Battery Voltage | 0 to 4.2V DC (Scaled mV) | Analog ADC | ADC GPIO Pin | `8` (`TYPE_BATTERY`) |
 
 ---
 
@@ -28,7 +26,7 @@ On every power-on or soft reset:
    - **Temperatures:** Multiplied by `100` ($21.45 \text{ °C} \rightarrow 2145$)
    - **Humidity:** Multiplied by `100` ($48.20 \text{ \%} \rightarrow 4820$)
    - **Pressure:** Multiplied by `10` ($1013.25 \text{ hPa} \rightarrow 10132$)
-   - **Lux, CO₂, Battery:** Raw integer values ($494 \text{ ppm} \rightarrow 494$)
+   - **Lux & CO₂:** Raw integer values ($494 \text{ ppm} \rightarrow 494$)
 
 ---
 

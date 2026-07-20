@@ -14,16 +14,15 @@ The gateway exports **Prometheus metrics** (`/metrics`) for Grafana visualizatio
 - **SX1262** (433 / 868 / 915 MHz with BUSY pin line)
 - **SX1278 / SX1276** (433 / 868 MHz classic transceivers)
 
-### Supported Sensors (Auto-Detected)
+### Supported Sensors
 
-| Sensor | Measurements | Physical Quantities & Units | I2C Address |
-|---|---|---|---|
-| **AHT20** | Temperature & Relative Humidity | °C, % RH | `0x38` |
-| **BMP280** | Temperature & Barometric Pressure | °C, hPa | `0x76` or `0x77` |
-| **TSL2561** | Ambient Light Intensity | Lux | `0x39`, `0x29`, `0x49` |
-| **BH1750** | Ambient Light Intensity | Lux | `0x23` or `0x5C` |
-| **SCD41 / SCD40** | Photoacoustic CO₂ Concentration, Temp & Humidity | ppm, °C, % | `0x62` |
-| **DHT22** | Temperature & Relative Humidity | °C, % RH | 1-Wire GPIO |
+| Sensor | Measurements | Physical Quantities & Units |
+|---|---|---|
+| **AHT20** | Temperature & Relative Humidity | °C, % RH |
+| **BMP280** | Temperature & Barometric Pressure | °C, hPa |
+| **TSL2561** | Ambient Light Intensity | Lux |
+| **BH1750** | Ambient Light Intensity | Lux |
+| **SCD41 / SCD40** | Photoacoustic CO₂ Concentration, Temp & Humidity | ppm, °C, % |
 
 ---
 

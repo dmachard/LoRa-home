@@ -70,14 +70,11 @@ Reading types are standardized via the following enumeration:
 
 | Value | Enum Name | Sensor | Physical Quantity | Gateway Scaling Rule |
 |---|---|---|---|---|
-| `1` | `TYPE_DHT22_TEMP` | DHT22 | Temperature | raw / 100.0f (°C) |
-| `2` | `TYPE_DHT22_HUM` | DHT22 | Humidity | raw / 100.0f (%) |
 | `3` | `TYPE_AHT20_TEMP` | AHT20 | Temperature | raw / 100.0f (°C) |
 | `4` | `TYPE_AHT20_HUM` | AHT20 | Humidity | raw / 100.0f (%) |
 | `5` | `TYPE_BMP280_TEMP` | BMP280 | Temperature | raw / 100.0f (°C) |
 | `6` | `TYPE_BMP280_PRES` | BMP280 | Atmospheric Pressure | raw / 10.0f (hPa) |
 | `7` | `TYPE_BH1750_LUX` | BH1750 | Light Intensity | raw (Lux) |
-| `8` | `TYPE_BATTERY` | Internal | Battery Voltage | raw (mV) |
 | `9` | `TYPE_SCD40_CO2` | SCD40/SCD41 | CO2 Concentration | raw (ppm) |
 
 ---
@@ -89,4 +86,4 @@ To avoid transmitting floating-point numbers (which are bandwidth-expensive and 
 *   **Temperatures:** Sent as `float × 100` (e.g., $23.45 \text{ °C} \rightarrow 2345$).
 *   **Humidity:** Sent as `float × 100` (e.g., $45.67 \text{ \%} \rightarrow 4567$).
 *   **Pressure:** Sent as `float × 10` (e.g., $1013.25 \text{ hPa} \rightarrow 10132$, i.e., Pa / 10).
-*   **Lux, Battery Voltage & CO2:** Sent as raw integers with no scaling (e.g., $4200 \text{ mV} \rightarrow 4200$, $850 \text{ ppm} \rightarrow 850$).
+*   **Lux & CO2:** Sent as raw integers with no scaling (e.g., $850 \text{ ppm} \rightarrow 850$).

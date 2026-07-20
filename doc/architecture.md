@@ -54,8 +54,6 @@ The client node reads environmental sensors, encrypts the payload, and transmits
   * **BMP280:** Temperature (°C) & Barometric Pressure (hPa)
   * **TSL2561 / BH1750:** Ambient Light Intensity (Lux)
   * **SCD41 / SCD40:** Photoacoustic CO₂ Concentration (ppm), Temperature (°C) & Humidity (%)
-  * **DHT22 / AM2302:** Temperature (°C) & Humidity (%)
-  * **Battery Voltage:** Supply voltage in mV via Analog ADC
 * **Persistent Storage (NVM):** Stores Node ID, node name, transmission interval, LoRa RF configuration (frequency, bandwidth, spreading factor, coding rate, preamble, sync word, chip selection), and AES-128 key.
 * **Operating Modes:**
   * **Provisioning Mode (BLE):** Starts BLE server for 60 seconds on boot (or triggered via BOOT button / radio error fallback) to allow wireless provisioning of parameters and wireless OTA firmware updates.
