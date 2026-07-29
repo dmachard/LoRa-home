@@ -43,16 +43,19 @@
 </head>
 <body class="body-center">
   <div class="card-update" id="update-card">
-    <h3>Gateway Firmware Update</h3>
+    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px;">
+      <h3 style="margin:0;" data-i18n="update_title">Gateway Firmware Update</h3>
+      <button id="lang-toggle" class="btn-lang-toggle" title="Switch Language" onclick="toggleLanguage()">🇫🇷 FR</button>
+    </div>
     <form id="upload-form">
       <div class="file-input-wrapper">
-        <label for="update-file" class="custom-file-upload">
+        <label for="update-file" class="custom-file-upload" data-i18n="choose_file">
           Choose firmware file (.bin)
         </label>
-        <input type="file" id="update-file" name="update" accept=".bin" required onchange="document.getElementById('file-name').innerText = this.files[0] ? this.files[0].name : ''">
-        <div id="file-name" class="file-name">No file selected</div>
+        <input type="file" id="update-file" name="update" accept=".bin" required onchange="document.getElementById('file-name').innerText = this.files[0] ? this.files[0].name : t('no_file_selected')">
+        <div id="file-name" class="file-name" data-i18n="no_file_selected">No file selected</div>
       </div>
-      <button type="submit" class="btn-submit" id="submit-btn">Start Update</button>
+      <button type="submit" class="btn-submit" id="submit-btn" data-i18n="start_update">Start Update</button>
     </form>
 
     <div class="progress-container" id="progress-container">
@@ -61,10 +64,66 @@
     </div>
 
     <div class="status-msg" id="status-msg"></div>
-    <a href="/" class="btn-back" id="back-link">← Back to Dashboard</a>
+    <a href="/" class="btn-back" id="back-link" data-i18n="back_dash">← Back to Dashboard</a>
   </div>
 
   <script>
+    const translations = {
+      en: {
+        update_title: "Gateway Firmware Update",
+        choose_file: "Choose firmware file (.bin)",
+        no_file_selected: "No file selected",
+        start_update: "Start Update",
+        back_dash: "← Back to Dashboard",
+        uploading_fw: "Uploading firmware...",
+        writing_flash: "Writing to flash... Please wait.",
+        update_success: "Update successful! Rebooting gateway...",
+        gw_online: "Gateway online! Redirecting...",
+        update_failed: "Update failed. An error occurred during flashing."
+      },
+      fr: {
+        update_title: "Mise à jour du Firmware Passerelle",
+        choose_file: "Choisir le fichier firmware (.bin)",
+        no_file_selected: "Aucun fichier sélectionné",
+        start_update: "Démarrer la mise à jour",
+        back_dash: "← Retour au tableau de bord",
+        uploading_fw: "Téléversement du firmware...",
+        writing_flash: "Écriture dans la mémoire flash... Veuillez patienter.",
+        update_success: "Mise à jour réussie ! Redémarrage de la passerelle...",
+        gw_online: "Passerelle en ligne ! Redirection...",
+        update_failed: "Échec de la mise à jour. Une erreur est survenue."
+      }
+    };
+
+    let currentLang = localStorage.getItem('lang') || (navigator.language && navigator.language.startsWith('fr') ? 'fr' : 'en');
+
+    function t(key, params = {}) {
+      const dict = translations[currentLang] || translations.en;
+      let text = dict[key] || translations.en[key] || key;
+      for (const [k, v] of Object.entries(params)) {
+        text = text.replace(`{${k}}`, v);
+      }
+      return text;
+    }
+
+    function setLanguage(lang) {
+      currentLang = lang;
+      localStorage.setItem('lang', lang);
+      document.documentElement.setAttribute('lang', lang);
+      
+      document.querySelectorAll('[data-i18n]').forEach(el => {
+        const key = el.getAttribute('data-i18n');
+        el.innerText = t(key);
+      });
+
+      const btn = document.getElementById('lang-toggle');
+      if (btn) btn.innerText = currentLang === 'fr' ? '🇫🇷 FR' : '🇬🇧 EN';
+    }
+
+    function toggleLanguage() {
+      setLanguage(currentLang === 'fr' ? 'en' : 'fr');
+    }
+
     const form = document.getElementById('upload-form');
     const fileInput = document.getElementById('update-file');
     const progressContainer = document.getElementById('progress-container');
@@ -83,7 +142,7 @@
       form.style.display = 'none';
       progressContainer.style.display = 'block';
       backLink.style.display = 'none';
-      statusMsg.innerText = "Uploading firmware...";
+      statusMsg.innerText = t('uploading_fw');
 
       const xhr = new XMLHttpRequest();
       xhr.open('POST', '/update', true);
@@ -93,7 +152,7 @@
         const percent = Math.round((e.loaded / e.total) * 100);
         progressBar.style.width = percent + '%';
         progressText.innerText = percent + '%';
-        if (percent === 100) statusMsg.innerText = "Writing to flash... Please wait.";
+        if (percent === 100) statusMsg.innerText = t('writing_flash');
       });
 
       xhr.onreadystatechange = function() {
@@ -106,30 +165,32 @@
         statusMsg.className = 'status-msg ' + (ok ? 'success' : 'error');
 
         if (ok) {
-          statusMsg.innerText = "Update successful! Rebooting gateway...";
+          statusMsg.innerText = t('update_success');
           setTimeout(() => {
             const check = setInterval(async () => {
               try {
                 const ctrl = new AbortController();
-                const t = setTimeout(() => ctrl.abort(), 1000);
+                const tTimer = setTimeout(() => ctrl.abort(), 1000);
                 const res = await fetch('/', { signal: ctrl.signal });
-                clearTimeout(t);
+                clearTimeout(tTimer);
                 if (res.status === 200) {
                   clearInterval(check);
-                  statusMsg.innerText = "Gateway online! Redirecting...";
+                  statusMsg.innerText = t('gw_online');
                   setTimeout(() => { window.location.href = '/'; }, 500);
                 }
               } catch (e) { /* still rebooting */ }
             }, 1500);
           }, 3000);
         } else {
-          statusMsg.innerText = "Update failed. An error occurred during flashing.";
+          statusMsg.innerText = t('update_failed');
           backLink.style.display = '';
         }
       };
 
       xhr.send(formData);
     });
+
+    setLanguage(currentLang);
   </script>
 </body>
 </html>

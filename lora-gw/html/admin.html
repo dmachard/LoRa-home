@@ -10,42 +10,43 @@
   <div class="container">
     <header>
       <div>
-        <h1>Gateway Administration</h1>
-        <div style="font-size:12px; color:#64748b; margin-top:4px;">System configuration and node provisioning</div>
+        <h1 data-i18n="admin_title">Gateway Administration</h1>
+        <div style="font-size:12px; color:#64748b; margin-top:4px;" data-i18n="admin_subtitle">System configuration and node provisioning</div>
       </div>
-      <div>
-        <a href="/metrics" class="btn-metrics">Prometheus Metrics</a>
-        <a href="/update" class="btn-update">Firmware Update</a>
-        <a href="/" class="btn btn-secondary" style="margin-left:8px;">← Dashboard</a>
+      <div style="display:flex; align-items:center; gap:8px;">
+        <button id="lang-toggle" class="btn-lang-toggle" title="Switch Language" onclick="toggleLanguage()">🇫🇷 FR</button>
+        <a href="/metrics" class="btn-metrics" data-i18n="btn_metrics">Prometheus Metrics</a>
+        <a href="/update" class="btn-update" data-i18n="btn_ota">Firmware Update</a>
+        <a href="/" class="btn btn-secondary" style="margin-left:8px;" data-i18n="btn_back_dash">← Dashboard</a>
       </div>
     </header>
 
     <!-- Tab Navigation -->
     <div class="tabs">
-      <button class="tab-btn active" id="tab-btn-gw-config" onclick="switchTab('gw-config')">Gateway Configuration</button>
-      <button class="tab-btn" id="tab-btn-ble" onclick="switchTab('ble')">Node Configuration (BLE)</button>
+      <button class="tab-btn active" id="tab-btn-gw-config" onclick="switchTab('gw-config')" data-i18n="tab_gw_config">Gateway Configuration</button>
+      <button class="tab-btn" id="tab-btn-ble" onclick="switchTab('ble')" data-i18n="tab_node_config">Node Configuration (BLE)</button>
     </div>
 
     <!-- Gateway Configuration Tab -->
     <div id="tab-gw-config" class="tab-content active">
       <div id="gw-ble-security-notice" class="alert-notice hidden">
-        <strong>⚠️ Bluetooth disabled by browser (Security)</strong><br>
-        The browser requires a secure connection (HTTPS or localhost) to allow Bluetooth.<br>
-        To use local BLE, open this page locally (double-click) or access the local IP via HTTP.
+        <strong data-i18n="ble_notice_title">⚠️ Bluetooth disabled by browser (Security)</strong><br>
+        <span data-i18n="ble_notice_desc">The browser requires a secure connection (HTTPS or localhost) to allow Bluetooth.<br>
+        To use local BLE, open this page locally (double-click) or access the local IP via HTTP.</span>
       </div>
 
       <div id="gw-ble-container" style="margin-bottom: 24px;">
         <!-- BLE Gateway Connection -->
         <div class="stat-card">
-          <h2 style="margin-top:0; font-size: 18px; font-weight: 700;">Bluetooth Low Energy Connection (Gateway)</h2>
-          <p style="font-size: 13px; color: #94a3b8; margin-bottom: 16px;">
+          <h2 style="margin-top:0; font-size: 18px; font-weight: 700;" data-i18n="gw_ble_title">Bluetooth Low Energy Connection (Gateway)</h2>
+          <p style="font-size: 13px; color: #94a3b8; margin-bottom: 16px;" data-i18n="gw_ble_desc">
             Put the gateway into config mode (press the BOOT button or start it without config; the blue LED will start flashing), then connect via local BLE below.
           </p>
           <div style="display: flex; gap: 16px; align-items: center;">
-            <button type="button" class="btn" id="btn-gw-connect">Connect to Gateway</button>
+            <button type="button" class="btn" id="btn-gw-connect" data-i18n="btn_connect_gw">Connect to Gateway</button>
             <div style="display: flex; align-items: center; gap: 8px; font-size: 14px;">
               <span id="gw-status-dot" class="dot offline"></span>
-              <span id="gw-status-text" style="font-weight:600; color:#ef4444;">Disconnected</span>
+              <span id="gw-status-text" style="font-weight:600; color:#ef4444;" data-i18n="status_disconnected">Disconnected</span>
             </div>
           </div>
         </div>
@@ -64,45 +65,45 @@
             <line x1="4.93" y1="19.07" x2="7.76" y2="16.24"/>
             <line x1="16.24" y1="7.76" x2="19.07" y2="4.93"/>
           </svg>
-          <span>Fetching gateway configuration parameters...</span>
+          <span data-i18n="fetching_gw_params">Fetching gateway configuration parameters...</span>
         </div>
         <div class="grid" style="grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 24px; margin-bottom: 24px;">
           <!-- WiFi and Auth -->
           <div class="stat-card">
-            <h3 style="margin-top:0; font-size: 15px; font-weight: 700; color: #38bdf8; border-bottom:1px solid rgba(255,255,255,0.05); padding-bottom:10px; margin-bottom:15px;">WiFi Network & Security</h3>
+            <h3 style="margin-top:0; font-size: 15px; font-weight: 700; color: #38bdf8; border-bottom:1px solid rgba(255,255,255,0.05); padding-bottom:10px; margin-bottom:15px;" data-i18n="gw_sec_wifi">WiFi Network & Security</h3>
             <div class="form-group">
-              <label for="gw_wifi_ssid">Network Name (SSID)</label>
+              <label for="gw_wifi_ssid" data-i18n="gw_wifi_ssid">Network Name (SSID)</label>
               <input type="text" id="gw_wifi_ssid" required placeholder="e.g. MyWiFiNetwork">
             </div>
             <div class="form-group">
-              <label for="gw_wifi_pass">WiFi Password</label>
+              <label for="gw_wifi_pass" data-i18n="gw_wifi_pass">WiFi Password</label>
               <input type="text" id="gw_wifi_pass" required placeholder="WPA Key">
             </div>
             <div class="form-group" style="margin-top:24px; border-top:1px solid rgba(255,255,255,0.05); padding-top:16px;">
-              <label for="gw_admin_pass">Administration Password (HTTP Auth)</label>
+              <label for="gw_admin_pass" data-i18n="gw_admin_pass">Administration Password (HTTP Auth)</label>
               <input type="text" id="gw_admin_pass" required placeholder="admin" value="admin">
-              <span style="font-size:10px; color:#64748b; display:block; margin-top:4px;">Default: admin</span>
+              <span style="font-size:10px; color:#64748b; display:block; margin-top:4px;" data-i18n="gw_admin_default">Default: admin</span>
             </div>
           </div>
 
           <!-- IP Settings -->
           <div class="stat-card">
-            <h3 style="margin-top:0; font-size: 15px; font-weight: 700; color: #38bdf8; border-bottom:1px solid rgba(255,255,255,0.05); padding-bottom:10px; margin-bottom:15px;">IP Configuration</h3>
+            <h3 style="margin-top:0; font-size: 15px; font-weight: 700; color: #38bdf8; border-bottom:1px solid rgba(255,255,255,0.05); padding-bottom:10px; margin-bottom:15px;" data-i18n="gw_sec_ip">IP Configuration</h3>
             <div class="form-group" style="display: flex; align-items: center; gap: 10px; margin-bottom: 20px;">
               <input type="checkbox" id="gw_use_static" style="width:20px; height:20px; cursor:pointer;">
-              <label for="gw_use_static" style="margin-bottom:0; cursor:pointer;">Use static IP address</label>
+              <label for="gw_use_static" style="margin-bottom:0; cursor:pointer;" data-i18n="gw_use_static">Use static IP address</label>
             </div>
             <div id="gw-static-ip-fields" style="display: none;">
               <div class="form-group">
-                <label for="gw_local_ip">Local IP Address</label>
+                <label for="gw_local_ip" data-i18n="gw_local_ip">Local IP Address</label>
                 <input type="text" id="gw_local_ip" placeholder="e.g. 192.168.1.100">
               </div>
               <div class="form-group">
-                <label for="gw_gateway_ip">Default Gateway</label>
+                <label for="gw_gateway_ip" data-i18n="gw_gateway_ip">Default Gateway</label>
                 <input type="text" id="gw_gateway_ip" placeholder="e.g. 192.168.1.1">
               </div>
               <div class="form-group">
-                <label for="gw_subnet_mask">Subnet Mask</label>
+                <label for="gw_subnet_mask" data-i18n="gw_subnet_mask">Subnet Mask</label>
                 <input type="text" id="gw_subnet_mask" placeholder="e.g. 255.255.255.0">
               </div>
             </div>
@@ -110,35 +111,35 @@
 
           <!-- Location & Altitude -->
           <div class="stat-card">
-            <h3 style="margin-top:0; font-size: 15px; font-weight: 700; color: #38bdf8; border-bottom:1px solid rgba(255,255,255,0.05); padding-bottom:10px; margin-bottom:15px;">Station Location & Environment</h3>
+            <h3 style="margin-top:0; font-size: 15px; font-weight: 700; color: #38bdf8; border-bottom:1px solid rgba(255,255,255,0.05); padding-bottom:10px; margin-bottom:15px;" data-i18n="gw_sec_loc">Station Location & Environment</h3>
             <div class="form-group">
-              <label for="gw_station_alt">Station Altitude (meters above sea level)</label>
+              <label for="gw_station_alt" data-i18n="gw_station_alt">Station Altitude (meters above sea level)</label>
               <input type="number" id="gw_station_alt" min="0" max="9000" placeholder="e.g. 96" value="96" required>
-              <span style="font-size:10px; color:#64748b; display:block; margin-top:4px;">Used for Sea-Level Barometric Pressure (QNH) calculation</span>
+              <span style="font-size:10px; color:#64748b; display:block; margin-top:4px;" data-i18n="gw_station_alt_desc">Used for Sea-Level Barometric Pressure (QNH) calculation</span>
             </div>
           </div>
 
           <!-- Gateway Hardware & Radio Card -->
           <div class="stat-card">
-            <h3 style="margin-top:0; font-size: 15px; font-weight: 700; color: #38bdf8; border-bottom:1px solid rgba(255,255,255,0.05); padding-bottom:10px; margin-bottom:15px;">Gateway Radio Hardware</h3>
+            <h3 style="margin-top:0; font-size: 15px; font-weight: 700; color: #38bdf8; border-bottom:1px solid rgba(255,255,255,0.05); padding-bottom:10px; margin-bottom:15px;" data-i18n="gw_sec_hw">Gateway Radio Hardware</h3>
             <div class="form-group">
-              <label for="gw_lora_chip">Gateway Transceiver Chip</label>
+              <label for="gw_lora_chip" data-i18n="gw_lora_chip">Gateway Transceiver Chip</label>
               <select id="gw_lora_chip" required>
                 <option value="2">SX1262 (CS=10, DIO1=13, RST=11, BUSY=12)</option>
                 <option value="1">SX1278 (CS=10, DIO0=1, RST=0)</option>
               </select>
             </div>
             <div class="form-group" style="margin-top:16px;">
-              <label for="gw_aes_key">Shared AES Key (32 hex chars / 16 bytes)</label>
+              <label for="gw_aes_key" data-i18n="gw_aes_key">Shared AES Key (32 hex chars / 16 bytes)</label>
               <input type="text" id="gw_aes_key" maxlength="32" minlength="32" required placeholder="Hexadecimal AES Key">
             </div>
-            <button type="button" class="btn btn-secondary" onclick="generateRandomGwKey()" style="width:100%; margin-top:8px;">Generate Random Key</button>
+            <button type="button" class="btn btn-secondary" onclick="generateRandomGwKey()" style="width:100%; margin-top:8px;" data-i18n="btn_gen_key">Generate Random Key</button>
           </div>
         </div>
 
         <div style="display: flex; gap: 16px; margin-top: 24px; border-top: 1px solid rgba(255,255,255,0.05); padding-top: 24px;">
-          <input type="submit" value="Save Configuration" class="btn" style="flex: 1;">
-          <button type="button" class="btn btn-danger" id="btn-gw-reset">Factory Reset</button>
+          <input type="submit" value="Save Configuration" id="btn-save-gw-submit" class="btn" style="flex: 1;">
+          <button type="button" class="btn btn-danger" id="btn-gw-reset" data-i18n="btn_factory_reset">Factory Reset</button>
         </div>
       </form>
     </div>
@@ -146,23 +147,23 @@
     <!-- Node Configuration Tab (BLE) -->
     <div id="tab-ble" class="tab-content">
       <div id="ble-security-notice" class="alert-notice hidden">
-        <strong>⚠️ Bluetooth disabled by browser (Security)</strong><br>
-        The browser requires a secure connection (HTTPS or localhost) to allow Bluetooth.<br>
-        To use local BLE, open this page locally (double-click) or access the local IP via HTTP.
+        <strong data-i18n="ble_notice_title">⚠️ Bluetooth disabled by browser (Security)</strong><br>
+        <span data-i18n="ble_notice_desc">The browser requires a secure connection (HTTPS or localhost) to allow Bluetooth.<br>
+        To use local BLE, open this page locally (double-click) or access the local IP via HTTP.</span>
       </div>
 
       <div id="ble-container">
         <!-- BLE Node Connection -->
         <div class="stat-card" style="margin-bottom: 24px;">
-          <h2 style="margin-top:0; font-size: 18px; font-weight: 700;">Bluetooth Low Energy Connection (Node)</h2>
-          <p style="font-size: 13px; color: #94a3b8; margin-bottom: 16px;">
+          <h2 style="margin-top:0; font-size: 18px; font-weight: 700;" data-i18n="node_ble_title">Bluetooth Low Energy Connection (Node)</h2>
+          <p style="font-size: 13px; color: #94a3b8; margin-bottom: 16px;" data-i18n="node_ble_desc">
             Put the LoRa node into configuration mode (by pressing the BOOT button once; the blue LED will start flashing), then connect below.
           </p>
           <div style="display: flex; gap: 16px; align-items: center;">
-            <button type="button" class="btn" id="btn-connect">Connect to Node</button>
+            <button type="button" class="btn" id="btn-connect" data-i18n="btn_connect_node">Connect to Node</button>
             <div style="display: flex; align-items: center; gap: 8px; font-size: 14px;">
               <span id="status-dot" class="dot offline"></span>
-              <span id="status-text" style="font-weight:600; color:#ef4444;">Disconnected</span>
+              <span id="status-text" style="font-weight:600; color:#ef4444;" data-i18n="status_disconnected">Disconnected</span>
             </div>
           </div>
         </div>
@@ -180,31 +181,31 @@
               <line x1="4.93" y1="19.07" x2="7.76" y2="16.24"/>
               <line x1="16.24" y1="7.76" x2="19.07" y2="4.93"/>
             </svg>
-            <span>Connecting & fetching node parameters over Bluetooth...</span>
+            <span data-i18n="fetching_node_params">Connecting & fetching node parameters over Bluetooth...</span>
           </div>
           <div class="grid" style="grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 24px; margin-bottom: 24px;">
             <!-- Node Identity Card -->
             <div class="stat-card">
-              <h3 style="margin-top:0; font-size: 15px; font-weight: 700; color: #38bdf8; border-bottom:1px solid rgba(255,255,255,0.05); padding-bottom:10px; margin-bottom:15px;">Node Identity</h3>
+              <h3 style="margin-top:0; font-size: 15px; font-weight: 700; color: #38bdf8; border-bottom:1px solid rgba(255,255,255,0.05); padding-bottom:10px; margin-bottom:15px;" data-i18n="node_sec_identity">Node Identity</h3>
               <div class="form-group">
-                <label for="node_id">Unique Node ID</label>
+                <label for="node_id" data-i18n="node_id">Unique Node ID</label>
                 <input type="number" id="node_id" min="1" max="254" required>
               </div>
               <div class="form-group">
-                <label for="node_name">Node Name</label>
+                <label for="node_name" data-i18n="node_name">Node Name</label>
                 <input type="text" id="node_name" maxlength="15" placeholder="e.g. LivingRoom" required>
               </div>
               <div class="form-group">
-                <label for="tx_interval">Transmission Interval (sec)</label>
+                <label for="tx_interval" data-i18n="tx_interval">Transmission Interval (sec)</label>
                 <input type="number" id="tx_interval" min="5" max="3600" required>
               </div>
             </div>
 
             <!-- LoRa Radio Settings Card -->
             <div class="stat-card">
-              <h3 style="margin-top:0; font-size: 15px; font-weight: 700; color: #38bdf8; border-bottom:1px solid rgba(255,255,255,0.05); padding-bottom:10px; margin-bottom:15px;">LoRa Radio Settings</h3>
+              <h3 style="margin-top:0; font-size: 15px; font-weight: 700; color: #38bdf8; border-bottom:1px solid rgba(255,255,255,0.05); padding-bottom:10px; margin-bottom:15px;" data-i18n="node_sec_radio">LoRa Radio Settings</h3>
               <div class="form-group" style="margin-bottom:12px;">
-                <label for="lora_chip">LoRa Radio Chip</label>
+                <label for="lora_chip" data-i18n="lora_chip">LoRa Radio Chip</label>
                 <select id="lora_chip" required>
                   <option value="2">SX1262 (433MHz / 868MHz)</option>
                   <option value="1">SX1278 (433MHz)</option>
@@ -212,11 +213,11 @@
               </div>
               <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
                 <div class="form-group">
-                  <label for="lora_freq">Frequency (MHz)</label>
+                  <label for="lora_freq" data-i18n="lora_freq">Frequency (MHz)</label>
                   <input type="number" id="lora_freq" step="0.1" required>
                 </div>
                 <div class="form-group">
-                  <label for="lora_bw">Bandwidth (kHz)</label>
+                  <label for="lora_bw" data-i18n="lora_bw">Bandwidth (kHz)</label>
                   <select id="lora_bw" required>
                     <option value="7.8">7.8</option>
                     <option value="10.4">10.4</option>
@@ -233,52 +234,52 @@
               </div>
               <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
                 <div class="form-group">
-                  <label for="lora_sf">Spreading Factor (SF)</label>
+                  <label for="lora_sf" data-i18n="lora_sf">Spreading Factor (SF)</label>
                   <input type="number" id="lora_sf" min="6" max="12" required>
                 </div>
                 <div class="form-group">
-                  <label for="lora_cr">Coding Rate (CR)</label>
+                  <label for="lora_cr" data-i18n="lora_cr">Coding Rate (CR)</label>
                   <input type="number" id="lora_cr" min="5" max="8" required>
                 </div>
               </div>
               <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
                 <div class="form-group">
-                  <label for="lora_sync">Sync Word (Hex)</label>
+                  <label for="lora_sync" data-i18n="lora_sync">Sync Word (Hex)</label>
                   <input type="text" id="lora_sync" required>
                 </div>
                 <div class="form-group">
-                  <label for="lora_power">TX Power (dBm)</label>
+                  <label for="lora_power" data-i18n="lora_power">TX Power (dBm)</label>
                   <input type="number" id="lora_power" min="2" max="20" required>
                 </div>
               </div>
               <div class="form-group">
-                <label for="lora_preamble">LoRa Preamble</label>
+                <label for="lora_preamble" data-i18n="lora_preamble">LoRa Preamble</label>
                 <input type="number" id="lora_preamble" min="6" max="65535" required>
               </div>
             </div>
 
             <!-- AES and OTA Updates Card -->
             <div class="stat-card">
-              <h3 style="margin-top:0; font-size: 15px; font-weight: 700; color: #38bdf8; border-bottom:1px solid rgba(255,255,255,0.05); padding-bottom:10px; margin-bottom:15px;">Node Security & Update</h3>
+              <h3 style="margin-top:0; font-size: 15px; font-weight: 700; color: #38bdf8; border-bottom:1px solid rgba(255,255,255,0.05); padding-bottom:10px; margin-bottom:15px;" data-i18n="node_sec_security">Node Security & Update</h3>
               <div class="form-group">
-                <label for="aes_key">Shared AES Key (32 hex chars / 16 bytes)</label>
+                <label for="aes_key" data-i18n="node_aes_key">Shared AES Key (32 hex chars / 16 bytes)</label>
                 <input type="text" id="aes_key" maxlength="32" minlength="32" required placeholder="AES Encryption Key">
               </div>
-              <button type="button" class="btn btn-secondary" onclick="generateRandomKey()" style="width:100%; margin-bottom: 20px;">Generate Random Key</button>
+              <button type="button" class="btn btn-secondary" onclick="generateRandomKey()" style="width:100%; margin-bottom: 20px;" data-i18n="btn_gen_key">Generate Random Key</button>
 
               <div style="border-top: 1px solid rgba(255,255,255,0.05); padding-top: 16px;">
-                <h4 style="margin-top:0; font-size: 13px; color:#f8fafc; font-weight:700;">Node OTA Update</h4>
+                <h4 style="margin-top:0; font-size: 13px; color:#f8fafc; font-weight:700;" data-i18n="node_ota_title">Node OTA Update</h4>
                 <div class="form-group" style="margin-top:12px;">
-                  <label for="ota-file" class="custom-file-upload" style="text-align:center;">Choose firmware (.bin)</label>
+                  <label for="ota-file" class="custom-file-upload" style="text-align:center;" data-i18n="label_choose_fw">Choose firmware (.bin)</label>
                   <input type="file" id="ota-file" accept=".bin">
-                  <div id="ota-file-name" class="file-name">No file selected</div>
+                  <div id="ota-file-name" class="file-name" data-i18n="no_file_selected">No file selected</div>
                 </div>
-                <button type="button" class="btn btn-success" id="btn-start-ota" style="display:none; width:100%; margin-top:8px;">Start OTA Update</button>
+                <button type="button" class="btn btn-success" id="btn-start-ota" style="display:none; width:100%; margin-top:8px;" data-i18n="btn_start_ota">Start OTA Update</button>
                 
                 <!-- OTA Progress Bar -->
                 <div id="ota-progress-container" style="display:none; margin-top: 16px;">
                   <div style="display:flex; justify-content:space-between; font-size:12px; margin-bottom:6px;">
-                    <span id="ota-status-label" style="color:#94a3b8;">Uploading file...</span>
+                    <span id="ota-status-label" style="color:#94a3b8;" data-i18n="uploading_file">Uploading file...</span>
                     <span id="ota-percent" style="font-weight:700; color:#38bdf8;">0%</span>
                   </div>
                   <div style="background:rgba(0,0,0,0.3); border-radius:10px; height:8px; overflow:hidden;">
@@ -290,12 +291,12 @@
           </div>
 
           <div style="display: flex; gap: 16px; margin-top: 24px; border-top: 1px solid rgba(255,255,255,0.05); padding-top: 24px;">
-            <input type="submit" value="Save Node Configuration" class="btn" style="flex: 1;">
-            <button type="button" class="btn btn-secondary" id="btn-fetch-logs" onclick="fetchNodeLogs()">Fetch Diagnostic Logs 📋</button>
-            <button type="button" class="btn btn-danger" id="btn-reset">Factory Reset Node</button>
+            <input type="submit" value="Save Node Configuration" id="btn-save-node-submit" class="btn" style="flex: 1;">
+            <button type="button" class="btn btn-secondary" id="btn-fetch-logs" onclick="fetchNodeLogs()" data-i18n="btn_fetch_logs">Fetch Diagnostic Logs 📋</button>
+            <button type="button" class="btn btn-danger" id="btn-reset" data-i18n="btn_reset_node">Factory Reset Node</button>
           </div>
           <div id="node-log-container" style="display:none; margin-top:20px;" class="stat-card">
-            <h3 style="margin-top:0; font-size:14px; color:#38bdf8;">Node Diagnostic Logs (BLE)</h3>
+            <h3 style="margin-top:0; font-size:14px; color:#38bdf8;" data-i18n="node_logs_title">Node Diagnostic Logs (BLE)</h3>
             <pre id="node-log-console" style="background:#0f172a; color:#34d399; padding:12px; border-radius:10px; font-family:monospace; font-size:11px; max-height:160px; overflow-y:auto; margin:0; border:1px solid #1e293b;"></pre>
           </div>
         </form>
@@ -304,6 +305,189 @@
   </div>
 
   <script>
+    const translations = {
+      en: {
+        admin_title: "Gateway Administration",
+        admin_subtitle: "System configuration and node provisioning",
+        btn_metrics: "Prometheus Metrics",
+        btn_ota: "Firmware Update",
+        btn_back_dash: "← Dashboard",
+        tab_gw_config: "Gateway Configuration",
+        tab_node_config: "Node Configuration (BLE)",
+        ble_notice_title: "⚠️ Bluetooth disabled by browser (Security)",
+        ble_notice_desc: "The browser requires a secure connection (HTTPS or localhost) to allow Bluetooth.<br>To use local BLE, open this page locally (double-click) or access the local IP via HTTP.",
+        gw_ble_title: "Bluetooth Low Energy Connection (Gateway)",
+        gw_ble_desc: "Put the gateway into config mode (press the BOOT button or start it without config; the blue LED will start flashing), then connect via local BLE below.",
+        btn_connect_gw: "Connect to Gateway",
+        btn_disconnect: "Disconnect",
+        status_disconnected: "Disconnected",
+        status_connected: "Connected",
+        status_searching: "Searching...",
+        status_reading: "Reading parameters...",
+        fetching_gw_params: "Fetching gateway configuration parameters...",
+        gw_sec_wifi: "WiFi Network & Security",
+        gw_wifi_ssid: "Network Name (SSID)",
+        gw_wifi_pass: "WiFi Password",
+        gw_admin_pass: "Administration Password (HTTP Auth)",
+        gw_admin_default: "Default: admin",
+        gw_sec_ip: "IP Configuration",
+        gw_use_static: "Use static IP address",
+        gw_local_ip: "Local IP Address",
+        gw_gateway_ip: "Default Gateway",
+        gw_subnet_mask: "Subnet Mask",
+        gw_sec_loc: "Station Location & Environment",
+        gw_station_alt: "Station Altitude (meters above sea level)",
+        gw_station_alt_desc: "Used for Sea-Level Barometric Pressure (QNH) calculation",
+        gw_sec_hw: "Gateway Radio Hardware",
+        gw_lora_chip: "Gateway Transceiver Chip",
+        gw_aes_key: "Shared AES Key (32 hex chars / 16 bytes)",
+        btn_gen_key: "Generate Random Key",
+        btn_save_gw: "Save Configuration",
+        btn_factory_reset: "Factory Reset",
+        node_ble_title: "Bluetooth Low Energy Connection (Node)",
+        node_ble_desc: "Put the LoRa node into configuration mode (by pressing the BOOT button once; the blue LED will start flashing), then connect below.",
+        btn_connect_node: "Connect to Node",
+        fetching_node_params: "Connecting & fetching node parameters over Bluetooth...",
+        node_sec_identity: "Node Identity",
+        node_id: "Unique Node ID",
+        node_name: "Node Name",
+        tx_interval: "Transmission Interval (sec)",
+        node_sec_radio: "LoRa Radio Settings",
+        lora_chip: "LoRa Radio Chip",
+        lora_freq: "Frequency (MHz)",
+        lora_bw: "Bandwidth (kHz)",
+        lora_sf: "Spreading Factor (SF)",
+        lora_cr: "Coding Rate (CR)",
+        lora_sync: "Sync Word (Hex)",
+        lora_power: "TX Power (dBm)",
+        lora_preamble: "LoRa Preamble",
+        node_sec_security: "Node Security & Update",
+        node_aes_key: "Shared AES Key (32 hex chars / 16 bytes)",
+        node_ota_title: "Node OTA Update",
+        label_choose_fw: "Choose firmware (.bin)",
+        no_file_selected: "No file selected",
+        btn_start_ota: "Start OTA Update",
+        uploading_file: "Uploading file...",
+        btn_save_node: "Save Node Configuration",
+        btn_fetch_logs: "Fetch Diagnostic Logs 📋",
+        btn_reset_node: "Factory Reset Node",
+        node_logs_title: "Node Diagnostic Logs (BLE)",
+        alert_reset_gw: "Are you sure you want to reset the gateway to factory default settings?",
+        alert_reset_node: "Are you sure you want to reset the node?",
+        alert_start_ota: "Start node OTA update?",
+        alert_no_logs: "No log entries recorded on node yet.",
+        alert_connect_first: "Please connect to the node via BLE first!",
+        msg_fetching_logs: "Fetching logs from node..."
+      },
+      fr: {
+        admin_title: "Administration Passerelle",
+        admin_subtitle: "Configuration système et avitaillement des nœuds",
+        btn_metrics: "Métriques Prometheus",
+        btn_ota: "Mise à jour Firmware",
+        btn_back_dash: "← Tableau de bord",
+        tab_gw_config: "Configuration Passerelle",
+        tab_node_config: "Configuration Nœud (BLE)",
+        ble_notice_title: "⚠️ Bluetooth désactivé par le navigateur (Sécurité)",
+        ble_notice_desc: "Le navigateur requiert une connexion sécurisée (HTTPS ou localhost) pour autoriser le Bluetooth.<br>Pour utiliser le BLE local, ouvrez cette page localement ou accédez à l'IP via HTTP.",
+        gw_ble_title: "Connexion Bluetooth Low Energy (Passerelle)",
+        gw_ble_desc: "Mettez la passerelle en mode config (appuyez sur le bouton BOOT ou démarrez sans config ; la LED bleue clignotera), puis connectez-vous via BLE ci-dessous.",
+        btn_connect_gw: "Se connecter à la passerelle",
+        btn_disconnect: "Déconnecter",
+        status_disconnected: "Déconnecté",
+        status_connected: "Connecté",
+        status_searching: "Recherche...",
+        status_reading: "Lecture des paramètres...",
+        fetching_gw_params: "Récupération des paramètres de la passerelle...",
+        gw_sec_wifi: "Réseau WiFi & Sécurité",
+        gw_wifi_ssid: "Nom du réseau (SSID)",
+        gw_wifi_pass: "Mot de passe WiFi",
+        gw_admin_pass: "Mot de passe d'administration (Auth HTTP)",
+        gw_admin_default: "Par défaut : admin",
+        gw_sec_ip: "Configuration IP",
+        gw_use_static: "Utiliser une adresse IP statique",
+        gw_local_ip: "Adresse IP locale",
+        gw_gateway_ip: "Passerelle par défaut",
+        gw_subnet_mask: "Masque de sous-réseau",
+        gw_sec_loc: "Localisation & Environnement de la station",
+        gw_station_alt: "Altitude de la station (mètres au-dessus du niveau de la mer)",
+        gw_station_alt_desc: "Utilisé pour le calcul de la pression barométrique au niveau de la mer (QNH)",
+        gw_sec_hw: "Matériel Radio de la Passerelle",
+        gw_lora_chip: "Puce émetteur-récepteur de la passerelle",
+        gw_aes_key: "Clé AES partagée (32 caract. hex / 16 octets)",
+        btn_gen_key: "Générer une clé aléatoire",
+        btn_save_gw: "Enregistrer la configuration",
+        btn_factory_reset: "Réinitialisation d'usine",
+        node_ble_title: "Connexion Bluetooth Low Energy (Nœud)",
+        node_ble_desc: "Mettez le nœud LoRa en mode configuration (en appuyant une fois sur le bouton BOOT ; la LED bleue clignotera), puis connectez-vous ci-dessous.",
+        btn_connect_node: "Se connecter au Nœud",
+        fetching_node_params: "Connexion et récupération des paramètres via Bluetooth...",
+        node_sec_identity: "Identité du Nœud",
+        node_id: "ID unique du Nœud",
+        node_name: "Nom du Nœud",
+        tx_interval: "Intervalle de transmission (sec)",
+        node_sec_radio: "Paramètres Radio LoRa",
+        lora_chip: "Puce Radio LoRa",
+        lora_freq: "Fréquence (MHz)",
+        lora_bw: "Largeur de bande (kHz)",
+        lora_sf: "Facteur d'étalement (SF)",
+        lora_cr: "Taux de codage (CR)",
+        lora_sync: "Mot de synchro (Hex)",
+        lora_power: "Puissance d'émission (dBm)",
+        lora_preamble: "Préambule LoRa",
+        node_sec_security: "Sécurité & Mise à jour du Nœud",
+        node_aes_key: "Clé AES partagée (32 caract. hex / 16 octets)",
+        node_ota_title: "Mise à jour OTA du Nœud",
+        label_choose_fw: "Choisir le fichier firmware (.bin)",
+        no_file_selected: "Aucun fichier sélectionné",
+        btn_start_ota: "Démarrer la mise à jour OTA",
+        uploading_file: "Envoi du fichier...",
+        btn_save_node: "Enregistrer la configuration du nœud",
+        btn_fetch_logs: "Récupérer les journaux de diagnostic 📋",
+        btn_reset_node: "Réinitialisation d'usine du Nœud",
+        node_logs_title: "Journaux de diagnostic du Nœud (BLE)",
+        alert_reset_gw: "Voulez-vous vraiment réinitialiser la passerelle aux paramètres d'usine ?",
+        alert_reset_node: "Voulez-vous vraiment réinitialiser le nœud aux paramètres d'usine ?",
+        alert_start_ota: "Démarrer la mise à jour OTA du nœud ?",
+        alert_no_logs: "Aucune entrée de journal enregistrée sur le nœud.",
+        alert_connect_first: "Veuillez d'abord vous connecter au nœud via BLE !",
+        msg_fetching_logs: "Récupération des journaux du nœud..."
+      }
+    };
+
+    let currentLang = localStorage.getItem('lang') || (navigator.language && navigator.language.startsWith('fr') ? 'fr' : 'en');
+
+    function t(key, params = {}) {
+      const dict = translations[currentLang] || translations.en;
+      let text = dict[key] || translations.en[key] || key;
+      for (const [k, v] of Object.entries(params)) {
+        text = text.replace(`{${k}}`, v);
+      }
+      return text;
+    }
+
+    function setLanguage(lang) {
+      currentLang = lang;
+      localStorage.setItem('lang', lang);
+      document.documentElement.setAttribute('lang', lang);
+      
+      document.querySelectorAll('[data-i18n]').forEach(el => {
+        const key = el.getAttribute('data-i18n');
+        el.innerHTML = t(key);
+      });
+      
+      const saveGwBtn = document.getElementById('btn-save-gw-submit');
+      if (saveGwBtn) saveGwBtn.value = t('btn_save_gw');
+      const saveNodeBtn = document.getElementById('btn-save-node-submit');
+      if (saveNodeBtn) saveNodeBtn.value = t('btn_save_node');
+
+      const btn = document.getElementById('lang-toggle');
+      if (btn) btn.innerText = currentLang === 'fr' ? '🇫🇷 FR' : '🇬🇧 EN';
+    }
+
+    function toggleLanguage() {
+      setLanguage(currentLang === 'fr' ? 'en' : 'fr');
+    }
+
     // --- NIMBLE DATAPIPE TRANSPORT CLASS ---
     class NimBLEDataPipe {
       constructor(serviceUuid, charUuid) {
@@ -854,9 +1038,11 @@
       otaFileInput.disabled = false;
       btnStartOta.style.display = 'none';
       otaProgressContainer.style.display = 'none';
-      otaFileName.innerText = "No file selected";
+      otaFileName.innerText = t('no_file_selected');
       otaFileInput.value = "";
     };
+
+    setLanguage(currentLang);
   </script>
 </body>
 </html>

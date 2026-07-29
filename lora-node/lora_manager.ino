@@ -45,13 +45,20 @@ void startLoRaMode() {
 
   if (tsl_detected) {
     tsl = new Adafruit_TSL2561_Unified(tsl_addr, 12345);
-    if (tsl->begin()) {
+    bool tslOk = false;
+    for (int retry = 0; retry < 3; retry++) {
+      if (tsl->begin()) {
+        tslOk = true;
+        break;
+      }
+      delay(50);
+    }
+    if (tslOk) {
       Serial.println("TSL2561 sensor initialized successfully!");
       tsl->enableAutoRange(true);
       tsl->setIntegrationTime(TSL2561_INTEGRATIONTIME_13MS);
     } else {
       Serial.println("TSL2561 initialization failed!");
-      tsl_detected = false;
       delete tsl;
       tsl = nullptr;
     }
@@ -149,6 +156,7 @@ void loopLoRa() {
     if (aht->getEvent(&humidity_event, &temp_event)) {
       float t = temp_event.temperature;
       float h = humidity_event.relative_humidity;
+      addLog("AHT20: T=%.1fC H=%.1f%%", t, h);
       Serial.printf("AHT20: T=%.2f°C | H=%.2f%%\n", t, h);
 
       payload.readings[payload.count].type = TYPE_AHT20_TEMP;
@@ -167,6 +175,7 @@ void loopLoRa() {
   if (bmp_detected && bmp != nullptr) {
     float t = bmp->readTemperature();
     float p = bmp->readPressure();
+    addLog("BMP280: P=%.1fhPa", p / 100.0f);
     Serial.printf("BMP280: T=%.2f°C | P=%.1fhPa\n", t, p / 100.0f);
 
     payload.readings[payload.count].type = TYPE_BMP280_PRES;
@@ -174,16 +183,28 @@ void loopLoRa() {
     payload.count++;
   }
 
-  // 3. Read TSL2561
+  // 3. Read TSL2561 (Light Lux photodiode sensor)
   if (tsl_detected && tsl != nullptr) {
     sensors_event_t event;
-    if (tsl->getEvent(&event)) {
+    bool readSuccess = false;
+    for (int retry = 0; retry < 5; retry++) {
+      if (tsl->getEvent(&event)) {
+        readSuccess = true;
+        break;
+      }
+      delay(50);
+    }
+
+    if (readSuccess) {
       float lux = event.light;
+      addLog("TSL2561: L=%.0flux", lux);
       Serial.printf("TSL2561: L=%.1flux\n", lux);
 
-      payload.readings[payload.count].type = TYPE_TSL2561_LUX;
-      payload.readings[payload.count].value = (int32_t)lux;
-      payload.count++;
+      if (payload.count < 10) {
+        payload.readings[payload.count].type = TYPE_TSL2561_LUX;
+        payload.readings[payload.count].value = (int32_t)lux;
+        payload.count++;
+      }
     } else {
       Serial.println("TSL2561 read failed");
     }
@@ -206,6 +227,7 @@ void loopLoRa() {
       float hum = 0.0f;
       uint16_t error = scd4x->readMeasurement(co2, temp, hum);
       if (!error && co2 > 0) {
+        addLog("SCD41: CO2=%dppm", co2);
         Serial.printf("SCD41: CO2=%dppm | T=%.2f°C | H=%.2f%%\n", co2, temp, hum);
         if (payload.count < 10) {
           payload.readings[payload.count].type = TYPE_SCD40_CO2;
@@ -226,6 +248,7 @@ void loopLoRa() {
     float sv = ina->getShuntVoltage_mV(); // Shunt voltage in mV
     float c = sv / 0.1f; // Direct calculation: I (mA) = V_shunt (mV) / R_shunt (0.1 Ohm)
     float p = v * c;     // Direct calculation: P (mW) = V (V) * I (mA)
+    addLog("INA226: V=%.2fV I=%.1fmA", v, c);
     Serial.printf("INA226: Voltage=%.3fV | Shunt=%.3fmV | Current=%.1fmA | Power=%.1fmW\n", v, sv, c, p);
 
     if (payload.count < 10) {

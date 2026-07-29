@@ -12,7 +12,7 @@
   <div class="container">
     <header>
       <div>
-        <h1>LoRa Home Gateway</h1>
+        <h1 data-i18n="gw_title">LoRa Home Gateway</h1>
         <div class="header-status-bar">
           <span class="status-pill" id="gw-nodes-pill"><span class="pill-dot"></span>-- Nodes</span>
           <span class="status-pill" id="gw-uptime-pill">Up: --</span>
@@ -21,9 +21,9 @@
         </div>
       </div>
       <div class="header-actions">
+        <button id="lang-toggle" class="btn-lang-toggle" title="Switch Language" onclick="toggleLanguage()">🇫🇷 FR</button>
         <button id="theme-toggle" class="btn-theme-toggle" title="Toggle Light/Dark Mode" onclick="toggleTheme()">☀️</button>
-        <a href="/metrics" class="btn-metrics" id="btn-metrics">Prometheus Metrics</a>
-        <a href="/admin" class="btn">Administration →</a>
+        <a href="/admin" class="btn" data-i18n="btn_admin">Administration →</a>
       </div>
     </header>
 
@@ -42,7 +42,7 @@
               <circle cx="12" cy="12" r="2"/>
             </svg>
           </div>
-          <div class="scanning-text">
+          <div class="scanning-text" data-i18n="searching">
             Searching for LoRa signals
           </div>
         </div>
@@ -51,6 +51,138 @@
   </div>
 
   <script>
+    const translations = {
+      en: {
+        gw_title: "LoRa Home Gateway",
+        btn_metrics: "Prometheus Metrics",
+        btn_admin: "Administration →",
+        searching: "Searching for LoRa signals",
+        up: "Up",
+        boot: "Boot",
+        nodes: "Nodes",
+        no_sensors: "No active sensors",
+        rssi_strong: "Strong",
+        rssi_medium: "Medium",
+        rssi_weak: "Weak",
+        snr_clean: "Clean",
+        snr_noisy: "Noisy",
+        snr_poor: "Poor",
+        lost: "Lost",
+        reboots: "Rbts",
+        seen: "Seen",
+        ago: "ago",
+        sensor_humidity: "Humidity",
+        sensor_pressure: "Pressure",
+        sensor_light: "Light",
+        sensor_battery: "Battery",
+        sensor_sensor: "Sensor",
+        hum_dry: "Dry",
+        hum_optimal: "Optimal",
+        hum_humid: "Humid",
+        press_sunny: "Sunny",
+        press_rainy: "Rainy",
+        press_variable: "Variable",
+        press_stable: "STABLE",
+        press_rising: "RISING",
+        press_falling: "FALLING",
+        press_trend_suffix: "(3H TREND)",
+        light_night: "Night",
+        light_indoor: "Indoor",
+        light_bright: "Bright",
+        light_sunlight: "Sunlight",
+        batt_charging: "CHARGING",
+        batt_discharging: "DISCHARGING",
+        batt_idle: "IDLE",
+        co2_good: "Clean Air",
+        co2_moderate: "Moderate",
+        co2_ventilate: "Ventilate!",
+        co2_poor: "Stale Air",
+        confirm_reset_stats: "Reset stats and reboot counter for node {id}?",
+        reset_stats_title: "Click to reset node statistics",
+        node_subtitle: "LoRa Node #{id}"
+      },
+      fr: {
+        gw_title: "Passerelle LoRa",
+        btn_metrics: "Métriques Prometheus",
+        btn_admin: "Administration →",
+        searching: "Recherche de signaux LoRa...",
+        up: "En service",
+        boot: "Démarrage",
+        nodes: "Nœuds",
+        no_sensors: "Aucun capteur actif",
+        rssi_strong: "Fort",
+        rssi_medium: "Moyen",
+        rssi_weak: "Faible",
+        snr_clean: "Propre",
+        snr_noisy: "Bruité",
+        snr_poor: "Mauvais",
+        lost: "Perdus",
+        reboots: "Redémarrage",
+        seen: "Vu",
+        ago: "il y a",
+        sensor_humidity: "Humidité",
+        sensor_pressure: "Pression",
+        sensor_light: "Luminosité",
+        sensor_battery: "Batterie",
+        sensor_sensor: "Capteur",
+        hum_dry: "Sec",
+        hum_optimal: "Optimal",
+        hum_humid: "Humide",
+        press_sunny: "Ensoleillé",
+        press_rainy: "Pluvieux",
+        press_variable: "Variable",
+        press_stable: "STABLE",
+        press_rising: "EN HAUSSE",
+        press_falling: "EN BAISSE",
+        press_trend_suffix: "(TENDANCE 3H)",
+        light_night: "Nuit",
+        light_indoor: "Intérieur",
+        light_bright: "Plein jour",
+        light_sunlight: "Plein soleil",
+        batt_charging: "CHARGE",
+        batt_discharging: "DÉCHARGE",
+        batt_idle: "REPOS",
+        co2_good: "Air Pur",
+        co2_moderate: "Modéré",
+        co2_ventilate: "Aérer !",
+        co2_poor: "Air Vicié",
+        confirm_reset_stats: "Réinitialiser les statistiques et le compteur pour le nœud {id} ?",
+        reset_stats_title: "Cliquer pour réinitialiser les statistiques du nœud",
+        node_subtitle: "Nœud LoRa #{id}"
+      }
+    };
+
+    let currentLang = localStorage.getItem('lang') || (navigator.language && navigator.language.startsWith('fr') ? 'fr' : 'en');
+
+    function t(key, params = {}) {
+      const dict = translations[currentLang] || translations.en;
+      let text = dict[key] || translations.en[key] || key;
+      for (const [k, v] of Object.entries(params)) {
+        text = text.replace(`{${k}}`, v);
+      }
+      return text;
+    }
+
+    function setLanguage(lang) {
+      currentLang = lang;
+      localStorage.setItem('lang', lang);
+      document.documentElement.setAttribute('lang', lang);
+      
+      document.querySelectorAll('[data-i18n]').forEach(el => {
+        const key = el.getAttribute('data-i18n');
+        el.innerText = t(key);
+      });
+      
+      const btn = document.getElementById('lang-toggle');
+      if (btn) btn.innerText = currentLang === 'fr' ? '🇫🇷 FR' : '🇬🇧 EN';
+
+      updateData();
+    }
+
+    function toggleLanguage() {
+      setLanguage(currentLang === 'fr' ? 'en' : 'fr');
+    }
+
     const nodesContainer = document.getElementById('nodes-container');
 
     const getRssiIcon = (rssi) => {
@@ -91,9 +223,9 @@
     };
 
     const getRssiLabelText = (rssi) => {
-      if (rssi >= -80) return 'Strong';
-      if (rssi >= -105) return 'Medium';
-      return 'Weak';
+      if (rssi >= -80) return t('rssi_strong');
+      if (rssi >= -105) return t('rssi_medium');
+      return t('rssi_weak');
     };
 
     const getSnrLabelClass = (snr) => {
@@ -105,9 +237,9 @@
 
     const getSnrLabelText = (snr) => {
       if (snr === undefined) return '--';
-      if (snr >= 7) return 'Clean';
-      if (snr >= 0) return 'Noisy';
-      return 'Poor';
+      if (snr >= 7) return t('snr_clean');
+      if (snr >= 0) return t('snr_noisy');
+      return t('snr_poor');
     };
     const getResetReasonLabel = (reason) => {
       switch (reason) {
@@ -149,8 +281,9 @@
       const h = Math.floor((seconds % (3600 * 24)) / 3600);
       const m = Math.floor((seconds % 3600) / 60);
       const s = seconds % 60;
+      const dayUnit = currentLang === 'fr' ? 'j' : 'd';
       let res = '';
-      if (d > 0) res += d + 'd ';
+      if (d > 0) res += d + dayUnit + ' ';
       if (h > 0 || d > 0) res += h + 'h ';
       if (m > 0 || h > 0 || d > 0) res += m + 'm ';
       res += s + 's';
@@ -165,7 +298,7 @@
         // Header Status Pills
         if (data.gateway && data.gateway.uptime_sec !== undefined) {
           const uptimeEl = document.getElementById('gw-uptime-pill');
-          if (uptimeEl) uptimeEl.innerText = 'Up: ' + formatUptime(data.gateway.uptime_sec);
+          if (uptimeEl) uptimeEl.innerText = `${t('up')}: ${formatUptime(data.gateway.uptime_sec)}`;
 
           const wifiEl = document.getElementById('gw-wifi-pill');
           if (wifiEl) wifiEl.innerText = 'WiFi: ' + data.gateway.wifi_rssi + ' dBm';
@@ -174,7 +307,7 @@
           if (resetEl && data.gateway.reset_reason !== undefined) {
             const reasonLabel = getResetReasonLabel(data.gateway.reset_reason);
             const reasonColor = getResetReasonColor(data.gateway.reset_reason);
-            resetEl.innerHTML = `Boot: <span style="color:${reasonColor}; font-weight:700; margin-left:3px;">${reasonLabel}</span>`;
+            resetEl.innerHTML = `${t('boot')}: <span style="color:${reasonColor}; font-weight:700; margin-left:3px;">${reasonLabel}</span>`;
           }
         }
 
@@ -183,7 +316,7 @@
         const nodesEl = document.getElementById('gw-nodes-pill');
         if (nodesEl) {
           const dotColor = onlineCount > 0 ? '#10b981' : '#ef4444';
-          nodesEl.innerHTML = `<span class="pill-dot" style="background:${dotColor}; box-shadow:0 0 8px ${dotColor}"></span>${onlineCount}/${totalCount} Nodes`;
+          nodesEl.innerHTML = `<span class="pill-dot" style="background:${dotColor}; box-shadow:0 0 8px ${dotColor}"></span>${onlineCount}/${totalCount} ${t('nodes')}`;
         }
 
         if (!data.nodes || data.nodes.length === 0) {
@@ -199,8 +332,8 @@
                   <circle cx="12" cy="12" r="2"/>
                 </svg>
               </div>
-              <div class="scanning-text">
-                Searching for LoRa signals
+              <div class="scanning-text" data-i18n="searching">
+                ${t('searching')}
               </div>
             </div>`;
           return;
@@ -262,7 +395,7 @@
 
         data.nodes.forEach(node => {
           // Dynamic timeouts based on node's configured tx_interval (in seconds)
-          const interval = node.tx_interval || 60; // Default fallback to 60s if not set yet
+          const interval = node.tx_interval || 60;
           const offlineThreshold = interval * 2.5;
           const hideThreshold = interval * 5;
 
@@ -271,20 +404,22 @@
 
           if (node.elapsed_sec >= hideThreshold) {
             if (existingCard) existingCard.remove();
-            return; // Hide node if inactive for too long
+            return;
           }
 
           const isOnline = node.elapsed_sec < offlineThreshold;
           const statusClass = isOnline ? '' : 'offline';
-          const lastSeenText = isOnline ? node.elapsed_sec + 's ago' : formatUptime(node.elapsed_sec) + ' ago';
+          const lastSeenText = currentLang === 'fr'
+            ? `${t('seen')} ${t('ago')} ${isOnline ? node.elapsed_sec + 's' : formatUptime(node.elapsed_sec)}`
+            : `${t('seen')} ${isOnline ? node.elapsed_sec + 's' : formatUptime(node.elapsed_sec)} ${t('ago')}`;
 
           let dotClass = '';
           if (node.elapsed_sec < interval * 1.2) {
-            dotClass = ''; // green (on time / normal)
+            dotClass = ''; // green
           } else if (node.elapsed_sec < offlineThreshold) {
-            dotClass = 'warning'; // orange (warning / missed a packet)
+            dotClass = 'warning'; // orange
           } else {
-            dotClass = 'offline'; // red (offline / critical silence)
+            dotClass = 'offline'; // red
           }
 
           const theme = themes[(node.id || 0) % themes.length];
@@ -292,7 +427,7 @@
           let readingsHtml = '';
           if (node.readings && node.readings.length > 0) {
             node.readings.forEach(r => {
-              let label = r.label || r.name || 'Sensor';
+              let label = r.label || r.name || t('sensor_sensor');
               let value = r.value;
               let unit = r.unit || '';
               let iconClass = 'temp';
@@ -301,41 +436,40 @@
               let subLabel = '';
               const nameLower = (r.name || '').toLowerCase();
               if (nameLower.includes('power') || nameLower.includes('watt')) {
-                return; // Remove Power item as it is redundant (P = V * I)
+                return;
               }
 
               if (nameLower.includes('temp')) {
                 let rawTemp = typeof value === 'number' ? value : parseFloat(value);
-                if (rawTemp < 18.0) iconClass = 'hum'; // Cold / Blue
-                else if (rawTemp <= 24.0) iconClass = 'co2'; // Comfort / Green
-                else if (rawTemp <= 28.0) iconClass = 'light'; // Warm / Yellow
-                else iconClass = 'temp'; // Hot / Red
+                if (rawTemp < 18.0) iconClass = 'hum';
+                else if (rawTemp <= 24.0) iconClass = 'co2';
+                else if (rawTemp <= 28.0) iconClass = 'light';
+                else iconClass = 'temp';
               } else if (nameLower.includes('humidity')) {
                 let rawHum = typeof value === 'number' ? value : parseFloat(value);
                 unit = '';
-                label = 'Humidity';
+                label = t('sensor_humidity');
                 subLabel = `<span style="font-size: 9px; opacity: 0.75; text-transform: lowercase; margin-left: 3px;">(${rawHum.toFixed(1)}%)</span>`;
                 iconSvg = '<path d="M12 22a7 7 0 0 0 7-7c0-4.3-7-11-7-11S5 10.7 5 15a7 7 0 0 0 7 7z"/>';
                 if (rawHum < 35.0) {
-                  iconClass = 'light'; // Yellow
-                  value = 'Dry';
+                  iconClass = 'light';
+                  value = t('hum_dry');
                 } else if (rawHum <= 60.0) {
-                  iconClass = 'co2'; // Green
-                  value = 'Optimal';
+                  iconClass = 'co2';
+                  value = t('hum_optimal');
                 } else {
-                  iconClass = 'hum'; // Blue
-                  value = 'Humid';
+                  iconClass = 'hum';
+                  value = t('hum_humid');
                 }
               } else if (nameLower.includes('pressure')) {
                 let rawP = typeof value === 'number' ? value : parseFloat(value);
                 let altM = getStationAltitude();
-                // Altitude QNH conversion
                 let seaP = rawP * Math.pow(1 - (0.0065 * altM) / 288.15, -5.255);
                 unit = '';
-                label = 'Pressure';
+                label = t('sensor_pressure');
                 let trendInfo = getBarometricTrend(node.id, rawP);
                 
-                let trendText = `STABLE ➔ (3H TREND)`;
+                let trendText = `${t('press_stable')} ➔ ${t('press_trend_suffix')}`;
                 if (trendInfo.hours > 0.05) {
                   let sign = trendInfo.diff >= 0 ? '+' : '';
                   let hStr = trendInfo.hours >= 1 ? `${Math.round(trendInfo.hours)}h` : `${Math.round(trendInfo.hours * 60)}m`;
@@ -347,30 +481,30 @@
                 iconSvg = '<circle cx="12" cy="12" r="9"/><polygon points="12 6 14.5 12 12 18 9.5 12 12 6"/><line x1="12" y1="3" x2="12" y2="5"/><line x1="12" y1="19" x2="12" y2="21"/><line x1="3" y1="12" x2="5" y2="12"/><line x1="19" y1="12" x2="21" y2="12"/>';
 
                 if (seaP >= 1013.25 || (trendInfo.rate || 0) >= 0.5) {
-                  value = 'Sunny';
+                  value = t('press_sunny');
                 } else if (seaP < 1000.0 || (trendInfo.rate || 0) <= -0.5) {
-                  value = 'Rainy';
+                  value = t('press_rainy');
                 } else {
-                  value = 'Variable';
+                  value = t('press_variable');
                 }
               } else if (nameLower.includes('light') || nameLower.includes('lux')) {
                 let rawLux = typeof value === 'number' ? Math.round(value) : parseInt(value);
                 unit = '';
-                label = 'Light';
+                label = t('sensor_light');
                 subLabel = `<span style="font-size: 9px; opacity: 0.75; text-transform: lowercase; margin-left: 3px;">(${rawLux}lux)</span>`;
                 iconSvg = '<circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41"/>';
                 if (rawLux < 15) {
-                  iconClass = 'hum'; // Blue / Night
-                  value = 'Night';
+                  iconClass = 'hum';
+                  value = t('light_night');
                 } else if (rawLux < 500) {
-                  iconClass = 'light'; // Yellow / Indoor
-                  value = 'Indoor';
+                  iconClass = 'light';
+                  value = t('light_indoor');
                 } else if (rawLux < 10000) {
-                  iconClass = 'light'; // Bright Yellow
-                  value = 'Bright';
+                  iconClass = 'light';
+                  value = t('light_bright');
                 } else {
-                  iconClass = 'co2'; // Green / Sunlight
-                  value = 'Sunlight';
+                  iconClass = 'co2';
+                  value = t('light_sunlight');
                 }
               } else if (nameLower.includes('voltage') || nameLower.includes('volt')) {
                 iconClass = 'batt';
@@ -385,16 +519,16 @@
                 let currText = '';
                 if (currReading !== undefined) {
                   let sign = rawCurr > 0 ? '+' : '';
-                  let cStatus = rawCurr > 0.3 ? 'CHARGING' : (rawCurr < -0.3 ? 'DISCHARGING' : 'IDLE');
+                  let cStatus = rawCurr > 0.3 ? t('batt_charging') : (rawCurr < -0.3 ? t('batt_discharging') : t('batt_idle'));
                   currText = `<div style="font-size: 9px; opacity: 0.75; margin-top: 2px; text-transform: uppercase;">${cStatus} (${sign}${rawCurr.toFixed(2)}mA)</div>`;
                 }
 
                 subLabel = `<span style="font-size: 9px; opacity: 0.75; text-transform: lowercase; margin-left: 3px;">(${smoothV.toFixed(2)}V)</span>${currText}`;
                 value = pct;
                 unit = '%';
-                label = 'Battery';
+                label = t('sensor_battery');
               } else if (nameLower.includes('current') || nameLower.includes('amp')) {
-                return; // Merged into Battery card above
+                return;
               } else if (nameLower.includes('co2')) {
                 let rawCo2 = typeof value === 'number' ? Math.round(value) : parseInt(value);
                 unit = '';
@@ -402,17 +536,17 @@
                 subLabel = `<span style="font-size: 9px; opacity: 0.75; text-transform: lowercase; margin-left: 3px;">(${rawCo2}ppm)</span>`;
                 iconSvg = '<path d="M17.5 19H9a7 7 0 1 1 6.71-9h1.79a4.5 4.5 0 1 1 0 9Z"/>';
                 if (rawCo2 < 800) {
-                  iconClass = 'co2'; // Green
-                  value = 'Good';
+                  iconClass = 'co2';
+                  value = t('co2_good');
                 } else if (rawCo2 < 1000) {
-                  iconClass = 'light'; // Yellow
-                  value = 'Moderate';
+                  iconClass = 'light';
+                  value = t('co2_moderate');
                 } else if (rawCo2 < 1500) {
-                  iconClass = 'press'; // Orange
-                  value = 'Ventilate!';
+                  iconClass = 'press';
+                  value = t('co2_ventilate');
                 } else {
-                  iconClass = 'temp'; // Red
-                  value = 'Poor';
+                  iconClass = 'temp';
+                  value = t('co2_poor');
                 }
               }
 
@@ -434,22 +568,23 @@
           const lossPercent = totalPackets > 0 ? (lostCount * 100) / totalPackets : 0;
           const lossPercentStr = lossPercent.toFixed(1).replace('.', ',');
 
-          let lossColor = '#34d399'; // 🟢 < 1%
+          let lossColor = '#34d399';
           if (lossPercent > 5) {
-            lossColor = '#ef4444'; // 🔴 > 5%
+            lossColor = '#ef4444';
           } else if (lossPercent >= 1) {
-            lossColor = '#fbbf24'; // 🟡 1–5%
+            lossColor = '#fbbf24';
           }
 
           const cardInnerHtml = `
               <div class="node-header">
                 <div class="node-title-group">
+                  <span style="font-size:10px; font-weight:700; text-transform:uppercase; letter-spacing:0.08em; color:#64748b; margin-bottom:2px;">${t('node_subtitle', { id: node.id })}</span>
                   <span class="node-name" style="color: ${isOnline ? theme.primary : '#94a3b8'}; text-shadow: 0 0 10px ${isOnline ? theme.glow : 'transparent'};">${node.name}</span>
                 </div>
               </div>
               
               <div class="node-readings">
-                ${readingsHtml || '<div style="flex:1; text-align:center; color:#64748b; font-size:13px; padding:12px;">No active sensors</div>'}
+                ${readingsHtml || `<div style="flex:1; text-align:center; color:#64748b; font-size:13px; padding:12px;">${t('no_sensors')}</div>`}
               </div>
 
               <div class="node-footer">
@@ -465,10 +600,10 @@
                 </div>
                 <div class="node-footer-right">
                   <div class="footer-metric right-aligned">
-                    <span style="cursor:pointer;" title="Click to reset node statistics" onclick="resetNodeStats(${node.id})">Lost: <b style="color: ${lossColor}">${lostCount} (${lossPercentStr} %)</b></span>
+                    <span style="cursor:pointer;" title="${t('reset_stats_title')}" onclick="resetNodeStats(${node.id})">${t('lost')}: <b style="color: ${lossColor}">${lostCount} (${lossPercentStr} %)</b></span>
                     <span class="stat-divider">·</span>
-                    <span style="cursor:pointer; display:inline-flex; align-items:center; gap:2px;" title="Click to reset statistics" onclick="resetNodeStats(${node.id})">
-                      Rbts: <b style="color: ${node.reboots > 0 ? '#fbbf24' : '#64748b'}">${node.reboots}</b>
+                    <span style="cursor:pointer; display:inline-flex; align-items:center; gap:2px;" title="${t('reset_stats_title')}" onclick="resetNodeStats(${node.id})">
+                      ${t('reboots')}: <b style="color: ${node.reboots > 0 ? '#fbbf24' : '#64748b'}">${node.reboots}</b>
                       <svg style="width:11px; height:11px; opacity:0.6; transition:transform 0.3s, opacity 0.2s; margin-left:2px; vertical-align:middle;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" onmouseover="this.style.opacity='1'; this.style.transform='rotate(180deg)';" onmouseout="this.style.opacity='0.6'; this.style.transform='rotate(0deg)';">
                         <path d="M23 4v6h-6"/>
                         <path d="M1 20v-6h6"/>
@@ -478,7 +613,7 @@
                   </div>
                   <div class="status-indicator right-aligned">
                     <span class="dot ${dotClass}"></span>
-                    <span>Seen ${lastSeenText} · Boot: <span style="color: ${getResetReasonColor(node.last_reset_reason || 8)}; font-weight: 700;">${getResetReasonLabel(node.last_reset_reason || 8)}</span></span>
+                    <span>${lastSeenText} · ${t('boot')}: <span style="color: ${getResetReasonColor(node.last_reset_reason || 8)}; font-weight: 700;">${getResetReasonLabel(node.last_reset_reason || 8)}</span></span>
                   </div>
                 </div>
               </div>`;
@@ -508,7 +643,6 @@
     function voltageToLiIonPercent(volts, current) {
       if (typeof volts !== 'number' || isNaN(volts)) return 0;
       
-      // Compensate internal resistance (IR) voltage boost while charging
       let vEst = volts;
       if (typeof current === 'number' && current > 5.0) {
         vEst = Math.max(3.30, volts - (current * 0.0008));
@@ -560,7 +694,6 @@
 
       history.push({ t: now, p: currentP });
 
-      // Keep sliding window of 3 hours (3 * 3600 * 1000 ms)
       const cutoff = now - (3 * 3600 * 1000);
       history = history.filter(item => item.t >= cutoff);
 
@@ -568,7 +701,7 @@
         localStorage.setItem(key, JSON.stringify(history));
       } catch(e) {}
 
-      if (history.length < 2) return { arrow: '➔', label: 'STABLE', diff: 0, hours: 0, rate: 0 };
+      if (history.length < 2) return { arrow: '➔', label: t('press_stable'), diff: 0, hours: 0, rate: 0 };
 
       const oldest = history[0];
       const hours = (now - oldest.t) / (3600 * 1000);
@@ -576,15 +709,15 @@
       const rate = hours > 0.02 ? diffP / hours : 0;
 
       let arrow = '➔';
-      let label = 'STABLE';
-      if (rate >= 0.8) { arrow = '↗'; label = 'RISING'; }
-      else if (rate <= -0.8) { arrow = '↘'; label = 'FALLING'; }
+      let label = t('press_stable');
+      if (rate >= 0.8) { arrow = '↗'; label = t('press_rising'); }
+      else if (rate <= -0.8) { arrow = '↘'; label = t('press_falling'); }
 
       return { arrow, label, diff: diffP, hours: Math.min(3, Math.round(hours * 10) / 10), rate };
     }
 
     async function resetNodeStats(nodeId) {
-      if (confirm(`Reset stats and reboot counter for node ${nodeId}?`)) {
+      if (confirm(t('confirm_reset_stats', { id: nodeId }))) {
         try {
           await fetch(`/api/reset_stats?node=${nodeId}`, { method: 'POST' });
           updateData();
@@ -628,7 +761,7 @@
     }
 
     initTheme();
-    updateData();
+    setLanguage(currentLang);
     setInterval(updateData, 1000);
   </script>
 </body>

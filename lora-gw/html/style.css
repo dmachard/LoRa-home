@@ -337,21 +337,23 @@ h1 {
   border-top: 1px solid var(--footer-border);
 }
 
-.btn-theme-toggle {
+.btn-theme-toggle, .btn-lang-toggle {
   background: var(--btn-bg);
   border: 1px solid var(--btn-border);
   color: var(--btn-color);
   padding: 8px 12px;
   border-radius: 12px;
-  font-size: 14px;
+  font-size: 13px;
+  font-weight: 600;
   cursor: pointer;
   display: inline-flex;
   align-items: center;
   justify-content: center;
+  gap: 4px;
   transition: all 0.2s ease;
 }
 
-.btn-theme-toggle:hover {
+.btn-theme-toggle:hover, .btn-lang-toggle:hover {
   transform: scale(1.05);
 }
 
@@ -969,7 +971,7 @@ input[type="file"] {
     gap: 8px;
   }
 
-  .btn-metrics, .btn, .btn-theme-toggle {
+  .btn-metrics, .btn, .btn-theme-toggle, .btn-lang-toggle {
     font-size: 12px;
     padding: 8px 12px;
   }
