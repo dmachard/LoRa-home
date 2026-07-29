@@ -291,7 +291,12 @@
 
           <div style="display: flex; gap: 16px; margin-top: 24px; border-top: 1px solid rgba(255,255,255,0.05); padding-top: 24px;">
             <input type="submit" value="Save Node Configuration" class="btn" style="flex: 1;">
+            <button type="button" class="btn btn-secondary" id="btn-fetch-logs" onclick="fetchNodeLogs()">Fetch Diagnostic Logs 📋</button>
             <button type="button" class="btn btn-danger" id="btn-reset">Factory Reset Node</button>
+          </div>
+          <div id="node-log-container" style="display:none; margin-top:20px;" class="stat-card">
+            <h3 style="margin-top:0; font-size:14px; color:#38bdf8;">Node Diagnostic Logs (BLE)</h3>
+            <pre id="node-log-console" style="background:#0f172a; color:#34d399; padding:12px; border-radius:10px; font-family:monospace; font-size:11px; max-height:160px; overflow-y:auto; margin:0; border:1px solid #1e293b;"></pre>
           </div>
         </form>
       </div>
@@ -676,6 +681,15 @@
         statusDot.className = "dot";
         statusText.innerText = "Connected";
         statusText.style.color = "#10b981";
+      } else if (json.cmd === 'node_logs') {
+        const container = document.getElementById('node-log-container');
+        const consoleEl = document.getElementById('node-log-console');
+        container.style.display = 'block';
+        if (json.logs && json.logs.length > 0) {
+          consoleEl.innerText = json.logs.map(l => `[+${Math.round(l.t/1000)}s] ${l.msg}`).join('\n');
+        } else {
+          consoleEl.innerText = "No log entries recorded on node yet.";
+        }
       } else if (json.status === 'saved') {
         alert("Configuration saved! The node will reboot.");
       } else if (json.status === 'reseted') {
@@ -687,6 +701,16 @@
         resetOtaUi();
       }
     });
+
+    async function fetchNodeLogs() {
+      if (!pipe.isConnected()) {
+        alert("Please connect to the node via BLE first!");
+        return;
+      }
+      document.getElementById('node-log-container').style.display = 'block';
+      document.getElementById('node-log-console').innerText = 'Fetching logs from node...';
+      await pipe.sendJson({ cmd: "get_logs" });
+    }
 
     pipe.setOnDisconnect(() => {
       statusDot.className = "dot offline";

@@ -376,13 +376,14 @@
                 iconClass = 'batt';
                 iconSvg = '<rect x="2" y="7" width="16" height="10" rx="2" ry="2"/><line x1="22" y1="11" x2="22" y2="13"/>';
                 let rawV = typeof value === 'number' ? value : parseFloat(value);
-                let smoothV = smoothVoltage(node.id, rawV, node.last_seen);
-                let pct = voltageToLiIonPercent(smoothV);
-                
+                let smoothV = smoothVoltage(node.id, rawV, node.packets_count);
+
                 let currReading = node.readings.find(item => (item.name || '').toLowerCase().includes('current') || (item.name || '').toLowerCase().includes('amp'));
+                let rawCurr = currReading !== undefined ? (typeof currReading.value === 'number' ? currReading.value : parseFloat(currReading.value)) : 0;
+                let pct = voltageToLiIonPercent(smoothV, rawCurr);
+                
                 let currText = '';
                 if (currReading !== undefined) {
-                  let rawCurr = typeof currReading.value === 'number' ? currReading.value : parseFloat(currReading.value);
                   let sign = rawCurr > 0 ? '+' : '';
                   let cStatus = rawCurr > 0.3 ? 'CHARGING' : (rawCurr < -0.3 ? 'DISCHARGING' : 'IDLE');
                   currText = `<div style="font-size: 9px; opacity: 0.75; margin-top: 2px; text-transform: uppercase;">${cStatus} (${sign}${rawCurr.toFixed(2)}mA)</div>`;
@@ -477,7 +478,7 @@
                   </div>
                   <div class="status-indicator right-aligned">
                     <span class="dot ${dotClass}"></span>
-                    <span>Seen ${lastSeenText}${node.last_reset_reason !== 0 ? ` · Boot: <span style="color: ${getResetReasonColor(node.last_reset_reason)}; font-weight: 700;">${getResetReasonLabel(node.last_reset_reason)}</span>` : ''}</span>
+                    <span>Seen ${lastSeenText} · Boot: <span style="color: ${getResetReasonColor(node.last_reset_reason || 8)}; font-weight: 700;">${getResetReasonLabel(node.last_reset_reason || 8)}</span></span>
                   </div>
                 </div>
               </div>`;
@@ -504,24 +505,31 @@
       }
     };
 
-    function voltageToLiIonPercent(volts) {
+    function voltageToLiIonPercent(volts, current) {
       if (typeof volts !== 'number' || isNaN(volts)) return 0;
-      if (volts >= 4.20) return 100;
-      if (volts <= 3.30) return 0;
+      
+      // Compensate internal resistance (IR) voltage boost while charging
+      let vEst = volts;
+      if (typeof current === 'number' && current > 5.0) {
+        vEst = Math.max(3.30, volts - (current * 0.0008));
+      }
+
+      if (vEst >= 4.08) return 100;
+      if (vEst <= 3.30) return 0;
+
       const curve = [
-        { v: 4.20, p: 100 },
-        { v: 4.10, p: 90 },
-        { v: 4.00, p: 80 },
-        { v: 3.90, p: 60 },
-        { v: 3.80, p: 40 },
-        { v: 3.70, p: 20 },
-        { v: 3.60, p: 10 },
-        { v: 3.50, p: 5 },
+        { v: 4.08, p: 100 },
+        { v: 4.00, p: 90 },
+        { v: 3.90, p: 80 },
+        { v: 3.82, p: 60 },
+        { v: 3.72, p: 40 },
+        { v: 3.62, p: 20 },
+        { v: 3.50, p: 10 },
         { v: 3.30, p: 0 }
       ];
       for (let i = 0; i < curve.length - 1; i++) {
-        if (volts <= curve[i].v && volts >= curve[i+1].v) {
-          const ratio = (volts - curve[i+1].v) / (curve[i].v - curve[i+1].v);
+        if (vEst <= curve[i].v && vEst >= curve[i+1].v) {
+          const ratio = (vEst - curve[i+1].v) / (curve[i].v - curve[i+1].v);
           return Math.round(curve[i+1].p + ratio * (curve[i].p - curve[i+1].p));
         }
       }
@@ -529,13 +537,13 @@
     }
 
     const voltageEMA = {};
-    const lastSeenTimes = {};
-    function smoothVoltage(nodeId, rawV, lastSeen) {
+    const lastPacketsCount = {};
+    function smoothVoltage(nodeId, rawV, pktCount) {
       if (voltageEMA[nodeId] === undefined) {
         voltageEMA[nodeId] = rawV;
-        lastSeenTimes[nodeId] = lastSeen;
-      } else if (lastSeen !== undefined && lastSeen !== lastSeenTimes[nodeId]) {
-        lastSeenTimes[nodeId] = lastSeen;
+        lastPacketsCount[nodeId] = pktCount;
+      } else if (pktCount !== undefined && pktCount !== lastPacketsCount[nodeId]) {
+        lastPacketsCount[nodeId] = pktCount;
         voltageEMA[nodeId] = voltageEMA[nodeId] * 0.75 + rawV * 0.25;
       }
       return voltageEMA[nodeId];

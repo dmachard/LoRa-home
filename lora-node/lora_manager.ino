@@ -92,8 +92,8 @@ void startLoRaMode() {
   SPI.begin(SPI_SCK, SPI_MISO, SPI_MOSI, 10);
 
   if (config.lora_chip == 2) {
-    Serial.println("Initializing SX1262 (CS=10, DIO1=1, RST=0, BUSY=5)...");
-    Module* mod = new Module(10, 1, 0, 5);
+    Serial.println("Initializing SX1262 (CS=10, DIO1=1, RST=0)...");
+    Module* mod = new Module(10, 1, 0, -1);
     SX1262* radio62 = new SX1262(mod);
     esp_task_wdt_reset();
     int state = radio62->begin(config.lora_freq, config.lora_bw, config.lora_sf,
@@ -189,10 +189,17 @@ void loopLoRa() {
     }
   }
 
-  // 4. Read SCD41
+  // 4. Read SCD41 (Photoacoustic CO2 NDIR sensor requires ~5s measurement window)
   if (scd_detected && scd4x != nullptr) {
     bool isDataReady = false;
-    scd4x->getDataReadyStatus(isDataReady);
+    uint32_t startWait = millis();
+    while (millis() - startWait < 5000) {
+      esp_task_wdt_reset();
+      scd4x->getDataReadyStatus(isDataReady);
+      if (isDataReady) break;
+      delay(100);
+    }
+
     if (isDataReady) {
       uint16_t co2 = 0;
       float temp = 0.0f;
@@ -208,6 +215,8 @@ void loopLoRa() {
       } else {
         Serial.println("SCD41 read failed");
       }
+    } else {
+      Serial.println("SCD41 measurement not ready after 5s wait");
     }
   }
 
@@ -269,37 +278,34 @@ void loopLoRa() {
   int state = radio->transmit(frame, len);
 
   if (state == RADIOLIB_ERR_NONE) {
+    addLog("TX OK: seq=%lu", seq);
     Serial.printf("TX OK seq=%lu\n", seq++);
     if (current_error_code == ERR_TX_FAILED)
       current_error_code = ERR_NONE;
   } else {
+    addLog("TX FAIL: err=%d", state);
     Serial.printf("TX failed: %d\n", state);
     current_error_code = ERR_TX_FAILED;
   }
 
-  // Smart wait loop that reacts to the BOOT button
-  uint32_t iterations = config.tx_interval * 10;
-  if (iterations == 0) iterations = 600; // Safety fallback
-
-  for (uint32_t i = 0; i < iterations; i++) {
-    esp_task_wdt_reset();
-
-    // Check BOOT button (active LOW)
-    if (digitalRead(BUTTON_PIN) == LOW) {
-      delay(50); // Debounce
-      if (digitalRead(BUTTON_PIN) == LOW) {
-        Serial.println("BOOT button pressed! Saving force_config flag and rebooting for BLE configuration...");
-
-        // Save the intent to enter config mode after reboot
-        prefs.begin("lora_cfg", false);
-        prefs.putBool("force_config", true);
-        prefs.end();
-
-        delay(500);
-        ESP.restart();
-      }
-    }
-
-    delay(100);
+  // 6. Put LoRa radio transceiver into deep sleep mode
+  if (radio != nullptr) {
+    radio->sleep();
   }
+
+  uint32_t sleepSec = config.tx_interval;
+  if (sleepSec == 0) sleepSec = 60; // Safety fallback
+
+  Serial.printf("Entering Deep Sleep for %u seconds (Power drops to ~5-10uA)...\n", sleepSec);
+  Serial.flush();
+
+  // Configure timer wakeup (in microseconds)
+  esp_sleep_enable_timer_wakeup((uint64_t)sleepSec * 1000000ULL);
+
+  // Enable external RTC button on GPIO 5 (active LOW) for instant Deep Sleep wakeup to BLE mode
+  gpio_deep_sleep_wakeup_enable((gpio_num_t)EXT_BUTTON_PIN, GPIO_INTR_LOW_LEVEL);
+  esp_deep_sleep_enable_gpio_wakeup(1ULL << EXT_BUTTON_PIN, ESP_GPIO_WAKEUP_GPIO_LOW);
+
+  // Start deep sleep (power consumption drops to ~5-10uA!)
+  esp_deep_sleep_start();
 }

@@ -53,6 +53,22 @@ void setupBLE(bool isConfigured) {
 
       bleDataPipe->sendJson(res);
     }
+    else if (cmd == "get_logs") {
+      Serial.println("get_logs request received via BLE!");
+      JsonDocument res;
+      res["cmd"] = "node_logs";
+      res["node_id"] = config.node_id;
+      res["reset_reason"] = (int)last_reset_reason;
+
+      JsonArray logsArray = res["logs"].to<JsonArray>();
+      for (int i = 0; i < logCount; i++) {
+        int idx = (logHead - logCount + i + 10) % 10;
+        JsonObject entry = logsArray.add<JsonObject>();
+        entry["t"] = logBuffer[idx].timestamp_ms;
+        entry["msg"] = String(logBuffer[idx].message);
+      }
+      bleDataPipe->sendJson(res);
+    }
     else if (cmd == "set_config") {
       Serial.println("set_config request received! Saving...");
       saveConfig(doc);

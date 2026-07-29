@@ -29,8 +29,9 @@
 #define LORA_HARDWARE_CHIP 2
 #endif
 
-// LED and Button Config (BOOT button is always GPIO 9 on ESP32-C3)
+// LED and Button Config (BOOT button is GPIO 9, External RTC wakeup button is GPIO 5)
 #define BUTTON_PIN 9
+#define EXT_BUTTON_PIN 5
 int LED_PIN = 8;        // Monochrome LED (e.g. GPIO 10 on Xiao ESP32-C3, GPIO 8 on SuperMini. Set to -1 if no LED)
 
 // Node configuration structure
@@ -64,11 +65,11 @@ uint32_t bleStartMs = 0;
 const uint32_t BLE_TIMEOUT_MS = 60000; // 60 seconds advertising timeout
 bool shouldReboot = false;
 
-// Global random Node ID generated on boot
-uint32_t node_random_id = 0;
+// Global random Node ID generated on boot (persisted in RTC memory across deep sleep)
+RTC_DATA_ATTR uint32_t node_random_id = 0;
 
-// LoRa sequence number
-uint32_t seq = 0;
+// LoRa sequence number stored in RTC memory across deep sleep
+RTC_DATA_ATTR uint32_t seq = 0;
 
 enum ResetReason {
   RESET_POWERON = 1,
@@ -77,6 +78,7 @@ enum ResetReason {
   RESET_PANIC = 4,
   RESET_WDT = 5,
   RESET_BROWNOUT = 6,
+  RESET_DEEPSLEEP = 8,
   RESET_UNKNOWN = 0
 };
 ResetReason last_reset_reason = RESET_UNKNOWN;
@@ -87,6 +89,29 @@ enum ErrorCode {
   ERR_TX_FAILED = 2
 };
 ErrorCode current_error_code = ERR_NONE;
+
+struct LogEntry {
+  uint32_t timestamp_ms;
+  char message[48];
+};
+RTC_DATA_ATTR LogEntry logBuffer[10];
+RTC_DATA_ATTR uint8_t logHead = 0;
+RTC_DATA_ATTR uint8_t logCount = 0;
+
+void addLog(const char* fmt, ...) {
+  char buf[48];
+  va_list args;
+  va_start(args, fmt);
+  vsnprintf(buf, sizeof(buf), fmt, args);
+  va_end(args);
+
+  logBuffer[logHead].timestamp_ms = millis();
+  strncpy(logBuffer[logHead].message, buf, sizeof(logBuffer[logHead].message) - 1);
+  logBuffer[logHead].message[sizeof(logBuffer[logHead].message) - 1] = '\0';
+
+  logHead = (logHead + 1) % 10;
+  if (logCount < 10) logCount++;
+}
 
 Adafruit_AHTX0* aht = nullptr;
 Adafruit_BMP280* bmp = nullptr;
@@ -196,19 +221,23 @@ void setup() {
   esp_reset_reason_t reason = esp_reset_reason();
   Serial.printf("Reset reason: %d\n", reason);
   switch (reason) {
-    case ESP_RST_POWERON: last_reset_reason = RESET_POWERON; break;
-    case ESP_RST_EXT:     last_reset_reason = RESET_EXT; break;
-    case ESP_RST_SW:      last_reset_reason = RESET_SW; break;
-    case ESP_RST_PANIC:   last_reset_reason = RESET_PANIC; break;
+    case ESP_RST_POWERON:   last_reset_reason = RESET_POWERON; break;
+    case ESP_RST_EXT:       last_reset_reason = RESET_EXT; break;
+    case ESP_RST_SW:        last_reset_reason = RESET_SW; break;
+    case ESP_RST_PANIC:     last_reset_reason = RESET_PANIC; break;
     case ESP_RST_INT_WDT:
     case ESP_RST_TASK_WDT:
-    case ESP_RST_WDT:     last_reset_reason = RESET_WDT; break;
-    case ESP_RST_BROWNOUT:last_reset_reason = RESET_BROWNOUT; break;
-    default:              last_reset_reason = RESET_UNKNOWN; break;
+    case ESP_RST_WDT:       last_reset_reason = RESET_WDT; break;
+    case ESP_RST_BROWNOUT:  last_reset_reason = RESET_BROWNOUT; break;
+    case ESP_RST_DEEPSLEEP: last_reset_reason = RESET_DEEPSLEEP; break;
+    default:                last_reset_reason = RESET_UNKNOWN; break;
   }
 
-  // Generate random ID specific to this boot session
-  node_random_id = esp_random();
+  // Generate random ID specific to this boot session (persisted during Deep Sleep)
+  if (node_random_id == 0 || last_reset_reason != RESET_DEEPSLEEP) {
+    node_random_id = esp_random();
+  }
+  addLog("Boot: reason=%d", (int)last_reset_reason);
   Serial.printf("Random Node ID: %08X\n", node_random_id);
 
   if (LED_PIN >= 0) {
@@ -217,6 +246,7 @@ void setup() {
   }
 
   pinMode(BUTTON_PIN, INPUT_PULLUP);
+  pinMode(EXT_BUTTON_PIN, INPUT_PULLUP);
 
   // 1. Load NVM config and check status
   bool isConfigured = loadConfig();
@@ -226,7 +256,7 @@ void setup() {
     config.lora_chip = LORA_HARDWARE_CHIP; // 2 for SX1262
   }
 
-  // 2. Check if config mode should be forced (via NVM flag or BOOT button)
+  // 2. Check if config mode should be forced (via NVM flag, BOOT button, or external RTC button)
   prefs.begin("lora_cfg", false);
   bool forceConfig = prefs.getBool("force_config", false);
   if (forceConfig) {
@@ -234,8 +264,15 @@ void setup() {
   }
   prefs.end();
 
+  // Check if woken up from Deep Sleep via external RTC button (GPIO 5)
+  esp_sleep_wakeup_cause_t wakeup_reason = esp_sleep_get_wakeup_cause();
+  if (wakeup_reason == ESP_SLEEP_WAKEUP_GPIO || wakeup_reason == ESP_SLEEP_WAKEUP_EXT0) {
+    forceConfig = true;
+    Serial.println("External RTC button (GPIO 5) wakeup detected from Deep Sleep! Entering BLE Config Mode...");
+  }
+
   // 3. Give 1.5s boot window allowing user to press BOOT button to enter BLE mode
-  Serial.println("Press BOOT button (GPIO 9) to enter BLE Config Mode...");
+  Serial.println("Press button to enter BLE Config Mode...");
   uint32_t startCheck = millis();
   while (millis() - startCheck < 1500) {
     if (digitalRead(BUTTON_PIN) == LOW) {
