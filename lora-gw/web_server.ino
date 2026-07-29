@@ -161,6 +161,7 @@ void handleNodesJson() {
   gw["rx_interrupts"]     = global_rx_interrupts;
   gw["malformed_packets"] = global_malformed_packets;
   gw["wifi_rssi"]         = WiFi.RSSI();
+  gw["reset_reason"]      = (uint8_t)esp_reset_reason();
 
   String out;
   out.reserve(2048);
@@ -242,6 +243,28 @@ void handleRootHtml() {
   server.send(200, "text/html", INDEX_HTML);
 }
 
+void handleResetStatsHttp() {
+  server.sendHeader("Access-Control-Allow-Origin", "*");
+  if (server.hasArg("node")) {
+    int id = server.arg("node").toInt();
+    if (id >= 0 && id < MAX_NODES) {
+      nodes[id].reboots = 0;
+      nodes[id].packets_lost = 0;
+      nodes[id].packets_count = 0;
+      nodes[id].auth_failures = 0;
+    }
+  } else {
+    for (int i = 0; i < MAX_NODES; i++) {
+      nodes[i].reboots = 0;
+      nodes[i].packets_lost = 0;
+      nodes[i].packets_count = 0;
+      nodes[i].auth_failures = 0;
+    }
+  }
+  updateDisplay();
+  server.send(200, "application/json", "{\"status\":\"ok\"}");
+}
+
 void setupWebServer() {
   server.on("/admin", handleAdminHtml);
   server.on("/metrics", handleMetrics);
@@ -249,6 +272,8 @@ void setupWebServer() {
   server.on("/api/gw_config", HTTP_GET, handleGetConfigHttp);
   server.on("/api/gw_config", HTTP_POST, handleSaveConfigHttp);
   server.on("/api/gw_reset", HTTP_POST, handleResetConfigHttp);
+  server.on("/api/reset_stats", HTTP_POST, handleResetStatsHttp);
+  server.on("/api/reset_stats", HTTP_GET, handleResetStatsHttp);
   server.on("/", handleRootHtml);
 
   // OTA upload form page

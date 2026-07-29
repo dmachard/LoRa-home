@@ -108,6 +108,16 @@
             </div>
           </div>
 
+          <!-- Location & Altitude -->
+          <div class="stat-card">
+            <h3 style="margin-top:0; font-size: 15px; font-weight: 700; color: #38bdf8; border-bottom:1px solid rgba(255,255,255,0.05); padding-bottom:10px; margin-bottom:15px;">Station Location & Environment</h3>
+            <div class="form-group">
+              <label for="gw_station_alt">Station Altitude (meters above sea level)</label>
+              <input type="number" id="gw_station_alt" min="0" max="9000" placeholder="e.g. 96" value="96" required>
+              <span style="font-size:10px; color:#64748b; display:block; margin-top:4px;">Used for Sea-Level Barometric Pressure (QNH) calculation</span>
+            </div>
+          </div>
+
           <!-- Gateway Hardware & Radio Card -->
           <div class="stat-card">
             <h3 style="margin-top:0; font-size: 15px; font-weight: 700; color: #38bdf8; border-bottom:1px solid rgba(255,255,255,0.05); padding-bottom:10px; margin-bottom:15px;">Gateway Radio Hardware</h3>
@@ -498,6 +508,7 @@
           document.getElementById('gw_subnet_mask').value = json.subnet_mask || '';
           document.getElementById('gw_lora_chip').value = json.lora_chip || 2;
           document.getElementById('gw_aes_key').value = json.aes_key || '';
+          document.getElementById('gw_station_alt').value = localStorage.getItem('station_altitude') || '96';
           updateGwStaticFieldsVisibility();
         } catch (e) {
           log(`HTTP load error: ${e.message}`, "error");
@@ -517,6 +528,7 @@
         document.getElementById('gw_subnet_mask').value = json.subnet_mask || '';
         document.getElementById('gw_lora_chip').value = json.lora_chip || 2;
         document.getElementById('gw_aes_key').value = json.aes_key || '';
+        document.getElementById('gw_station_alt').value = localStorage.getItem('station_altitude') || '96';
         updateGwStaticFieldsVisibility();
 
         document.getElementById('gw-loading-banner').classList.add('hidden');
@@ -566,6 +578,7 @@
 
     gwConfigForm.addEventListener('submit', async (e) => {
       e.preventDefault();
+      localStorage.setItem('station_altitude', document.getElementById('gw_station_alt').value || '96');
       const payload = {
         wifi_ssid: document.getElementById('gw_wifi_ssid').value.trim(),
         wifi_pass: document.getElementById('gw_wifi_pass').value.trim(),

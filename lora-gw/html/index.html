@@ -17,9 +17,11 @@
           <span class="status-pill" id="gw-nodes-pill"><span class="pill-dot"></span>-- Nodes</span>
           <span class="status-pill" id="gw-uptime-pill">Up: --</span>
           <span class="status-pill" id="gw-wifi-pill">WiFi: --</span>
+          <span class="status-pill" id="gw-reset-pill">Boot: --</span>
         </div>
       </div>
       <div class="header-actions">
+        <button id="theme-toggle" class="btn-theme-toggle" title="Toggle Light/Dark Mode" onclick="toggleTheme()">☀️</button>
         <a href="/metrics" class="btn-metrics" id="btn-metrics">Prometheus Metrics</a>
         <a href="/admin" class="btn">Administration →</a>
       </div>
@@ -113,8 +115,12 @@
         case 2: return 'ExtPin';
         case 3: return 'Software';
         case 4: return 'Panic';
-        case 5: return 'Watchdog';
-        case 6: return 'Brownout';
+        case 5: return 'IntWDT';
+        case 6: return 'TaskWDT';
+        case 7: return 'WDT';
+        case 8: return 'DeepSleep';
+        case 9: return 'Brownout';
+        case 10: return 'SDIO';
         default: return 'Unknown';
       }
     };
@@ -122,16 +128,20 @@
     const getResetReasonColor = (reason) => {
       switch (reason) {
         case 1: // PowerOn
+        case 8: // DeepSleep
+          return '#38bdf8'; // Sky Blue
         case 3: // Software
-          return '#94a3b8'; // subtle silver/gray
+          return '#c084fc'; // Purple
         case 2: // ExtPin
-          return '#fbbf24'; // warning/amber
+          return '#fbbf24'; // Amber
         case 4: // Panic
-        case 5: // Watchdog
-        case 6: // Brownout
-          return '#f87171'; // danger/red
+        case 5: // IntWDT
+        case 6: // TaskWDT
+        case 7: // WDT
+        case 9: // Brownout
+          return '#f87171'; // Red
         default:
-          return '#64748b';
+          return '#94a3b8';
       }
     };
     const formatUptime = (seconds) => {
@@ -159,6 +169,13 @@
 
           const wifiEl = document.getElementById('gw-wifi-pill');
           if (wifiEl) wifiEl.innerText = 'WiFi: ' + data.gateway.wifi_rssi + ' dBm';
+
+          const resetEl = document.getElementById('gw-reset-pill');
+          if (resetEl && data.gateway.reset_reason !== undefined) {
+            const reasonLabel = getResetReasonLabel(data.gateway.reset_reason);
+            const reasonColor = getResetReasonColor(data.gateway.reset_reason);
+            resetEl.innerHTML = `Boot: <span style="color:${reasonColor}; font-weight:700; margin-left:3px;">${reasonLabel}</span>`;
+          }
         }
 
         const onlineCount = data.nodes ? data.nodes.filter(n => n.elapsed_sec < (n.tx_interval || 60) * 2.5).length : 0;
@@ -281,28 +298,121 @@
               let iconClass = 'temp';
               let iconSvg = '<path d="M14 14.76V3.5a2.5 2.5 0 0 0-5 0v11.26a4.5 4.5 0 1 0 5 0z"/>';
 
+              let subLabel = '';
               const nameLower = (r.name || '').toLowerCase();
-              if (nameLower.includes('humidity')) {
-                iconClass = 'hum';
+              if (nameLower.includes('power') || nameLower.includes('watt')) {
+                return; // Remove Power item as it is redundant (P = V * I)
+              }
+
+              if (nameLower.includes('temp')) {
+                let rawTemp = typeof value === 'number' ? value : parseFloat(value);
+                if (rawTemp < 18.0) iconClass = 'hum'; // Cold / Blue
+                else if (rawTemp <= 24.0) iconClass = 'co2'; // Comfort / Green
+                else if (rawTemp <= 28.0) iconClass = 'light'; // Warm / Yellow
+                else iconClass = 'temp'; // Hot / Red
+              } else if (nameLower.includes('humidity')) {
+                let rawHum = typeof value === 'number' ? value : parseFloat(value);
+                unit = '';
+                label = 'Humidity';
+                subLabel = `<span style="font-size: 9px; opacity: 0.75; text-transform: lowercase; margin-left: 3px;">(${rawHum.toFixed(1)}%)</span>`;
                 iconSvg = '<path d="M12 22a7 7 0 0 0 7-7c0-4.3-7-11-7-11S5 10.7 5 15a7 7 0 0 0 7 7z"/>';
+                if (rawHum < 35.0) {
+                  iconClass = 'light'; // Yellow
+                  value = 'Dry';
+                } else if (rawHum <= 60.0) {
+                  iconClass = 'co2'; // Green
+                  value = 'Optimal';
+                } else {
+                  iconClass = 'hum'; // Blue
+                  value = 'Humid';
+                }
               } else if (nameLower.includes('pressure')) {
+                let rawP = typeof value === 'number' ? value : parseFloat(value);
+                let altM = getStationAltitude();
+                // Altitude QNH conversion
+                let seaP = rawP * Math.pow(1 - (0.0065 * altM) / 288.15, -5.255);
+                unit = '';
+                label = 'Pressure';
+                let trendInfo = getBarometricTrend(node.id, rawP);
+                
+                let trendText = `STABLE ➔ (3H TREND)`;
+                if (trendInfo.hours > 0.05) {
+                  let sign = trendInfo.diff >= 0 ? '+' : '';
+                  let hStr = trendInfo.hours >= 1 ? `${Math.round(trendInfo.hours)}h` : `${Math.round(trendInfo.hours * 60)}m`;
+                  trendText = `${trendInfo.label} ${trendInfo.arrow} (${sign}${trendInfo.diff.toFixed(1)}hPa / ${hStr})`;
+                }
+
+                subLabel = `<span style="font-size: 9px; opacity: 0.75; text-transform: lowercase; margin-left: 3px;">(${seaP.toFixed(1)}hpa qnh)</span><div style="font-size: 9px; opacity: 0.75; margin-top: 2px; text-transform: uppercase;">${trendText}</div>`;
                 iconClass = 'press';
-                iconSvg = '<circle cx="12" cy="12" r="10"/><path d="M12 6v6l3 3"/>';
+                iconSvg = '<circle cx="12" cy="12" r="9"/><polygon points="12 6 14.5 12 12 18 9.5 12 12 6"/><line x1="12" y1="3" x2="12" y2="5"/><line x1="12" y1="19" x2="12" y2="21"/><line x1="3" y1="12" x2="5" y2="12"/><line x1="19" y1="12" x2="21" y2="12"/>';
+
+                if (seaP >= 1013.25 || (trendInfo.rate || 0) >= 0.5) {
+                  value = 'Sunny';
+                } else if (seaP < 1000.0 || (trendInfo.rate || 0) <= -0.5) {
+                  value = 'Rainy';
+                } else {
+                  value = 'Variable';
+                }
               } else if (nameLower.includes('light') || nameLower.includes('lux')) {
-                iconClass = 'light';
+                let rawLux = typeof value === 'number' ? Math.round(value) : parseInt(value);
+                unit = '';
+                label = 'Light';
+                subLabel = `<span style="font-size: 9px; opacity: 0.75; text-transform: lowercase; margin-left: 3px;">(${rawLux}lux)</span>`;
                 iconSvg = '<circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41"/>';
+                if (rawLux < 15) {
+                  iconClass = 'hum'; // Blue / Night
+                  value = 'Night';
+                } else if (rawLux < 500) {
+                  iconClass = 'light'; // Yellow / Indoor
+                  value = 'Indoor';
+                } else if (rawLux < 10000) {
+                  iconClass = 'light'; // Bright Yellow
+                  value = 'Bright';
+                } else {
+                  iconClass = 'co2'; // Green / Sunlight
+                  value = 'Sunlight';
+                }
               } else if (nameLower.includes('voltage') || nameLower.includes('volt')) {
-                iconClass = 'volt';
-                iconSvg = '<polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/>';
+                iconClass = 'batt';
+                iconSvg = '<rect x="2" y="7" width="16" height="10" rx="2" ry="2"/><line x1="22" y1="11" x2="22" y2="13"/>';
+                let rawV = typeof value === 'number' ? value : parseFloat(value);
+                let smoothV = smoothVoltage(node.id, rawV, node.last_seen);
+                let pct = voltageToLiIonPercent(smoothV);
+                
+                let currReading = node.readings.find(item => (item.name || '').toLowerCase().includes('current') || (item.name || '').toLowerCase().includes('amp'));
+                let currText = '';
+                if (currReading !== undefined) {
+                  let rawCurr = typeof currReading.value === 'number' ? currReading.value : parseFloat(currReading.value);
+                  let sign = rawCurr > 0 ? '+' : '';
+                  let cStatus = rawCurr > 0.3 ? 'CHARGING' : (rawCurr < -0.3 ? 'DISCHARGING' : 'IDLE');
+                  currText = `<div style="font-size: 9px; opacity: 0.75; margin-top: 2px; text-transform: uppercase;">${cStatus} (${sign}${rawCurr.toFixed(2)}mA)</div>`;
+                }
+
+                subLabel = `<span style="font-size: 9px; opacity: 0.75; text-transform: lowercase; margin-left: 3px;">(${smoothV.toFixed(2)}V)</span>${currText}`;
+                value = pct;
+                unit = '%';
+                label = 'Battery';
               } else if (nameLower.includes('current') || nameLower.includes('amp')) {
-                iconClass = 'curr';
-                iconSvg = '<circle cx="12" cy="12" r="10"/><path d="M12 6v12M8 12h8"/>';
-              } else if (nameLower.includes('power') || nameLower.includes('watt')) {
-                iconClass = 'power';
-                iconSvg = '<path d="M18.36 6.64a9 9 0 1 1-12.73 0"/><line x1="12" y1="2" x2="12" y2="12"/>';
+                return; // Merged into Battery card above
               } else if (nameLower.includes('co2')) {
-                iconClass = 'co2';
+                let rawCo2 = typeof value === 'number' ? Math.round(value) : parseInt(value);
+                unit = '';
+                label = 'CO2';
+                subLabel = `<span style="font-size: 9px; opacity: 0.75; text-transform: lowercase; margin-left: 3px;">(${rawCo2}ppm)</span>`;
                 iconSvg = '<path d="M17.5 19H9a7 7 0 1 1 6.71-9h1.79a4.5 4.5 0 1 1 0 9Z"/>';
+                if (rawCo2 < 800) {
+                  iconClass = 'co2'; // Green
+                  value = 'Good';
+                } else if (rawCo2 < 1000) {
+                  iconClass = 'light'; // Yellow
+                  value = 'Moderate';
+                } else if (rawCo2 < 1500) {
+                  iconClass = 'press'; // Orange
+                  value = 'Ventilate!';
+                } else {
+                  iconClass = 'temp'; // Red
+                  value = 'Poor';
+                }
               }
 
               let displayVal = typeof value === 'number' ? (Number.isInteger(value) ? value : value.toFixed(1)) : value;
@@ -313,7 +423,7 @@
                     <svg class="metric-icon ${iconClass}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">${iconSvg}</svg>
                     <span class="metric-value">${displayVal}<span class="metric-unit">${unit}</span></span>
                   </div>
-                  <span class="metric-label">${label}</span>
+                  <span class="metric-label">${label}${subLabel}</span>
                 </div>`;
             });
           }
@@ -354,9 +464,16 @@
                 </div>
                 <div class="node-footer-right">
                   <div class="footer-metric right-aligned">
-                    <span>Lost: <b style="color: ${lossColor}">${lostCount} (${lossPercentStr} %)</b></span>
+                    <span style="cursor:pointer;" title="Click to reset node statistics" onclick="resetNodeStats(${node.id})">Lost: <b style="color: ${lossColor}">${lostCount} (${lossPercentStr} %)</b></span>
                     <span class="stat-divider">·</span>
-                    <span>Rbts: <b style="color: ${node.reboots > 0 ? '#fbbf24' : '#64748b'}">${node.reboots}</b></span>
+                    <span style="cursor:pointer; display:inline-flex; align-items:center; gap:2px;" title="Click to reset statistics" onclick="resetNodeStats(${node.id})">
+                      Rbts: <b style="color: ${node.reboots > 0 ? '#fbbf24' : '#64748b'}">${node.reboots}</b>
+                      <svg style="width:11px; height:11px; opacity:0.6; transition:transform 0.3s, opacity 0.2s; margin-left:2px; vertical-align:middle;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" onmouseover="this.style.opacity='1'; this.style.transform='rotate(180deg)';" onmouseout="this.style.opacity='0.6'; this.style.transform='rotate(0deg)';">
+                        <path d="M23 4v6h-6"/>
+                        <path d="M1 20v-6h6"/>
+                        <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/>
+                      </svg>
+                    </span>
                   </div>
                   <div class="status-indicator right-aligned">
                     <span class="dot ${dotClass}"></span>
@@ -387,6 +504,122 @@
       }
     };
 
+    function voltageToLiIonPercent(volts) {
+      if (typeof volts !== 'number' || isNaN(volts)) return 0;
+      if (volts >= 4.20) return 100;
+      if (volts <= 3.30) return 0;
+      const curve = [
+        { v: 4.20, p: 100 },
+        { v: 4.10, p: 90 },
+        { v: 4.00, p: 80 },
+        { v: 3.90, p: 60 },
+        { v: 3.80, p: 40 },
+        { v: 3.70, p: 20 },
+        { v: 3.60, p: 10 },
+        { v: 3.50, p: 5 },
+        { v: 3.30, p: 0 }
+      ];
+      for (let i = 0; i < curve.length - 1; i++) {
+        if (volts <= curve[i].v && volts >= curve[i+1].v) {
+          const ratio = (volts - curve[i+1].v) / (curve[i].v - curve[i+1].v);
+          return Math.round(curve[i+1].p + ratio * (curve[i].p - curve[i+1].p));
+        }
+      }
+      return 0;
+    }
+
+    const voltageEMA = {};
+    const lastSeenTimes = {};
+    function smoothVoltage(nodeId, rawV, lastSeen) {
+      if (voltageEMA[nodeId] === undefined) {
+        voltageEMA[nodeId] = rawV;
+        lastSeenTimes[nodeId] = lastSeen;
+      } else if (lastSeen !== undefined && lastSeen !== lastSeenTimes[nodeId]) {
+        lastSeenTimes[nodeId] = lastSeen;
+        voltageEMA[nodeId] = voltageEMA[nodeId] * 0.75 + rawV * 0.25;
+      }
+      return voltageEMA[nodeId];
+    }
+
+    function getBarometricTrend(nodeId, currentP) {
+      const key = `press_hist_${nodeId}`;
+      const now = Date.now();
+      let history = [];
+      try {
+        const stored = localStorage.getItem(key);
+        if (stored) history = JSON.parse(stored);
+      } catch(e) {}
+
+      history.push({ t: now, p: currentP });
+
+      // Keep sliding window of 3 hours (3 * 3600 * 1000 ms)
+      const cutoff = now - (3 * 3600 * 1000);
+      history = history.filter(item => item.t >= cutoff);
+
+      try {
+        localStorage.setItem(key, JSON.stringify(history));
+      } catch(e) {}
+
+      if (history.length < 2) return { arrow: '➔', label: 'STABLE', diff: 0, hours: 0, rate: 0 };
+
+      const oldest = history[0];
+      const hours = (now - oldest.t) / (3600 * 1000);
+      const diffP = currentP - oldest.p;
+      const rate = hours > 0.02 ? diffP / hours : 0;
+
+      let arrow = '➔';
+      let label = 'STABLE';
+      if (rate >= 0.8) { arrow = '↗'; label = 'RISING'; }
+      else if (rate <= -0.8) { arrow = '↘'; label = 'FALLING'; }
+
+      return { arrow, label, diff: diffP, hours: Math.min(3, Math.round(hours * 10) / 10), rate };
+    }
+
+    async function resetNodeStats(nodeId) {
+      if (confirm(`Reset stats and reboot counter for node ${nodeId}?`)) {
+        try {
+          await fetch(`/api/reset_stats?node=${nodeId}`, { method: 'POST' });
+          updateData();
+        } catch (e) {
+          console.error(e);
+        }
+      }
+    }
+
+    function initTheme() {
+      const saved = localStorage.getItem('theme');
+      if (saved === 'light') {
+        document.documentElement.setAttribute('data-theme', 'light');
+        const btn = document.getElementById('theme-toggle');
+        if (btn) btn.innerText = '🌙';
+      } else {
+        document.documentElement.removeAttribute('data-theme');
+        const btn = document.getElementById('theme-toggle');
+        if (btn) btn.innerText = '☀️';
+      }
+    }
+
+    function toggleTheme() {
+      const current = document.documentElement.getAttribute('data-theme');
+      if (current === 'light') {
+        document.documentElement.removeAttribute('data-theme');
+        localStorage.setItem('theme', 'dark');
+        const btn = document.getElementById('theme-toggle');
+        if (btn) btn.innerText = '☀️';
+      } else {
+        document.documentElement.setAttribute('data-theme', 'light');
+        localStorage.setItem('theme', 'light');
+        const btn = document.getElementById('theme-toggle');
+        if (btn) btn.innerText = '🌙';
+      }
+    }
+
+    function getStationAltitude() {
+      const saved = localStorage.getItem('station_altitude');
+      return saved !== null ? parseFloat(saved) : 96.0;
+    }
+
+    initTheme();
     updateData();
     setInterval(updateData, 1000);
   </script>
