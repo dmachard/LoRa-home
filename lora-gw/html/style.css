@@ -478,6 +478,42 @@ h1 {
 
 
 /* Button & Nav Styles */
+.btn-lang-toggle, .btn-theme-toggle {
+  background: var(--pill-bg);
+  color: var(--pill-color);
+  border: 1px solid var(--pill-border);
+  padding: 7px 14px;
+  border-radius: 9999px;
+  font-weight: 700;
+  font-size: 12px;
+  letter-spacing: 0.02em;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  backdrop-filter: blur(12px);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.04);
+}
+
+.btn-lang-toggle:hover, .btn-theme-toggle:hover {
+  background: rgba(255, 255, 255, 0.12);
+  border-color: rgba(255, 255, 255, 0.22);
+  color: var(--text-title);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+[data-theme="light"] .btn-lang-toggle:hover, [data-theme="light"] .btn-theme-toggle:hover {
+  background: #F1F5F9;
+  border-color: #94A3B8;
+}
+
+.btn-lang-toggle:active, .btn-theme-toggle:active {
+  transform: translateY(0);
+}
+
 .btn-update {
   background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
   color: white;
@@ -980,5 +1016,63 @@ input[type="file"] {
     grid-template-columns: repeat(2, 1fr);
     gap: 14px 8px;
   }
+}
+
+/* Radio Legend Panel */
+.legend-panel {
+  background: var(--card-bg);
+  border: 1px solid var(--card-border-def);
+  border-radius: 16px;
+  padding: 16px 20px;
+  margin-bottom: 24px;
+  box-shadow: var(--card-shadow);
+  backdrop-filter: blur(12px);
+}
+
+.legend-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+}
+
+.legend-header h3 {
+  margin: 0;
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--text-title);
+}
+
+.legend-close {
+  background: none;
+  border: none;
+  color: var(--label-color);
+  font-size: 16px;
+  cursor: pointer;
+  padding: 4px 8px;
+}
+
+.legend-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 16px;
+}
+
+.legend-item {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+.legend-item p {
+  margin: 2px 0 0 0;
+  color: var(--label-color);
+}
+
+.legend-icon {
+  font-size: 18px;
+  line-height: 1;
 }
 

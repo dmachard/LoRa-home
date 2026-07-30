@@ -21,11 +21,40 @@
         </div>
       </div>
       <div class="header-actions">
+        <button id="legend-toggle" class="btn-lang-toggle" title="Toggle Radio Legend" onclick="toggleRadioLegend()"><svg style="width:14px; height:14px; vertical-align:-2px; margin-right:4px;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg><span data-i18n="btn_legend">Légende</span></button>
         <button id="lang-toggle" class="btn-lang-toggle" title="Switch Language" onclick="toggleLanguage()">🇫🇷 FR</button>
         <button id="theme-toggle" class="btn-theme-toggle" title="Toggle Light/Dark Mode" onclick="toggleTheme()">☀️</button>
         <a href="/admin" class="btn" data-i18n="btn_admin">Administration →</a>
       </div>
     </header>
+
+    <!-- Radio Legend Panel -->
+    <div id="radio-legend-panel" class="legend-panel" style="display: none;">
+      <div class="legend-header">
+        <h3 data-i18n="legend_title">Légende des métriques Radio LoRa</h3>
+        <button class="legend-close" onclick="toggleRadioLegend()">✕</button>
+      </div>
+      <div class="legend-grid">
+        <div class="legend-item">
+          <span class="legend-icon">📶</span>
+          <div>
+            <p data-i18n="legend_rssi"><b>RSSI</b> (Puissance du Signal) : Force brute du signal radio en dBm (-50 dBm = Très Fort, -115 dBm = Très Faible).</p>
+          </div>
+        </div>
+        <div class="legend-item">
+          <span class="legend-icon">🌊</span>
+          <div>
+            <p data-i18n="legend_snr"><b>SNR</b> (Rapport Signal/Bruit) : Clarté du signal par rapport au bruit ambiant en dB. >7 dB = Signal très propre.</p>
+          </div>
+        </div>
+        <div class="legend-item">
+          <span class="legend-icon">🛡️</span>
+          <div>
+            <p data-i18n="legend_lqi"><b>LQI</b> (Qualité du Lien RF) : Score global de santé réseau (0 à 100%) combinant 60% RSSI et 40% SNR.</p>
+          </div>
+        </div>
+      </div>
+    </div>
 
     <!-- Dashboard -->
     <div id="tab-dashboard" class="tab-content active">
@@ -77,7 +106,7 @@
         sensor_battery: "Battery",
         sensor_sensor: "Sensor",
         hum_dry: "Dry",
-        hum_optimal: "Optimal",
+        hum_optimal: "Moderate",
         hum_humid: "Humid",
         press_sunny: "Sunny",
         press_rainy: "Rainy",
@@ -99,7 +128,16 @@
         co2_poor: "Stale Air",
         confirm_reset_stats: "Reset stats and reboot counter for node {id}?",
         reset_stats_title: "Click to reset node statistics",
-        node_subtitle: "LoRa Node #{id}"
+        node_subtitle: "LoRa Node #{id}",
+        on_since: "On for",
+        btn_legend: "Legend",
+        legend_title: "LoRa Radio Metrics Legend",
+        legend_rssi: "<b>RSSI</b> (Received Signal Strength): Raw radio signal power in dBm. Ranges from -50 dBm (Strong) to -115 dBm (Weak).",
+        legend_snr: "<b>SNR</b> (Signal-to-Noise Ratio): Signal clarity over background RF noise in dB. >7 dB indicates a clean signal.",
+        legend_lqi: "<b>LQI</b> (Link Quality Index): Global RF link health score (0-100%) combining 60% RSSI and 40% SNR.",
+        tooltip_rssi: "RSSI (Received Signal Strength): Raw signal power in dBm",
+        tooltip_snr: "SNR (Signal-to-Noise Ratio): Signal clarity over noise in dB",
+        tooltip_lqi: "LQI (Link Quality Index): Combined RF health score (0-100%)"
       },
       fr: {
         gw_title: "Passerelle LoRa",
@@ -126,7 +164,7 @@
         sensor_battery: "Batterie",
         sensor_sensor: "Capteur",
         hum_dry: "Sec",
-        hum_optimal: "Optimal",
+        hum_optimal: "Modéré",
         hum_humid: "Humide",
         press_sunny: "Ensoleillé",
         press_rainy: "Pluvieux",
@@ -148,7 +186,16 @@
         co2_poor: "Air Vicié",
         confirm_reset_stats: "Réinitialiser les statistiques et le compteur pour le nœud {id} ?",
         reset_stats_title: "Cliquer pour réinitialiser les statistiques du nœud",
-        node_subtitle: "Nœud LoRa #{id}"
+        node_subtitle: "Nœud LoRa #{id}",
+        on_since: "Allumé depuis",
+        btn_legend: "Légende",
+        legend_title: "Légende des métriques Radio LoRa",
+        legend_rssi: "<b>RSSI</b> (Puissance du Signal) : Force brute du signal radio en dBm (-50 dBm = Très Fort, -115 dBm = Très Faible).",
+        legend_snr: "<b>SNR</b> (Rapport Signal/Bruit) : Clarté du signal par rapport au bruit ambiant en dB. >7 dB = Signal très propre.",
+        legend_lqi: "<b>LQI</b> (Qualité du Lien RF) : Score global de santé réseau (0 à 100%) combinant 60% RSSI et 40% SNR.",
+        tooltip_rssi: "RSSI (Puissance du Signal) : Force brute en dBm (-50dBm fort, -115dBm faible)",
+        tooltip_snr: "SNR (Rapport Signal/Bruit) : Clarté du signal en dB (>7dB très propre)",
+        tooltip_lqi: "LQI (Qualité du Lien RF) : Score de santé réseau de 0% à 100%"
       }
     };
 
@@ -170,11 +217,11 @@
       
       document.querySelectorAll('[data-i18n]').forEach(el => {
         const key = el.getAttribute('data-i18n');
-        el.innerText = t(key);
+        el.innerHTML = t(key);
       });
       
       const btn = document.getElementById('lang-toggle');
-      if (btn) btn.innerText = currentLang === 'fr' ? '🇫🇷 FR' : '🇬🇧 EN';
+      if (btn) btn.innerText = currentLang === 'fr' ? 'FR' : 'EN';
 
       updateData();
     }
@@ -216,6 +263,17 @@
         </svg>`;
     };
 
+    const getLqiIcon = (lqi) => {
+      let color = '#ef4444';
+      if (lqi >= 75) color = '#10b981';
+      else if (lqi >= 45) color = '#f59e0b';
+      return `
+        <svg class="node-radio-icon" style="color: ${color};" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+          <path d="m9 12 2 2 4-4"/>
+        </svg>`;
+    };
+
     const getRssiLabelClass = (rssi) => {
       if (rssi >= -80) return 'strong';
       if (rssi >= -105) return 'medium';
@@ -241,6 +299,60 @@
       if (snr >= 0) return t('snr_noisy');
       return t('snr_poor');
     };
+
+    const calculateLQI = (rssi, snr) => {
+      if (rssi === undefined || rssi === 0) return 0;
+      const rssiScore = Math.min(100, Math.max(0, ((rssi + 125) / 70) * 100));
+      const snrVal = snr !== undefined ? snr : 0;
+      const snrScore = Math.min(100, Math.max(0, ((snrVal + 10) / 20) * 100));
+      return Math.round(0.6 * rssiScore + 0.4 * snrScore);
+    };
+
+    const getLqiLabelClass = (lqi) => {
+      if (lqi >= 75) return 'strong';
+      if (lqi >= 45) return 'medium';
+      return 'weak';
+    };
+
+    function getBatteryLifetimeEst(nodeId, currentPct, currentmA) {
+      if (currentmA > 1.0) return ''; // En charge : pas de doublon d'affichage
+      
+      const key = `batt_hist_${nodeId}`;
+      const now = Date.now();
+      let history = [];
+      try {
+        const stored = localStorage.getItem(key);
+        if (stored) history = JSON.parse(stored);
+      } catch(e) {}
+
+      history.push({ t: now, p: currentPct });
+      const cutoff = now - (7 * 24 * 3600 * 1000);
+      history = history.filter(item => item.t >= cutoff);
+      try {
+        localStorage.setItem(key, JSON.stringify(history));
+      } catch(e) {}
+
+      if (history.length < 2) return '';
+
+      const oldest = history[0];
+      const daysDiff = (now - oldest.t) / (24 * 3600 * 1000);
+      const pctDiff = oldest.p - currentPct;
+
+      if (daysDiff > 0.04 && pctDiff > 0.05) {
+        const ratePerDay = pctDiff / daysDiff;
+        const daysLeft = Math.round(currentPct / ratePerDay);
+        if (daysLeft > 365) {
+          const years = (daysLeft / 365).toFixed(1);
+          return `~${years} ${currentLang === 'fr' ? 'ans' : 'yrs'}`;
+        } else if (daysLeft > 30) {
+          const months = Math.round(daysLeft / 30);
+          return `~${months} ${currentLang === 'fr' ? 'mois' : 'mos'}`;
+        } else {
+          return `~${daysLeft}${currentLang === 'fr' ? 'j restants' : 'd left'}`;
+        }
+      }
+      return '';
+    }
     const getResetReasonLabel = (reason) => {
       switch (reason) {
         case 1: return 'PowerOn';
@@ -288,6 +400,22 @@
       if (m > 0 || h > 0 || d > 0) res += m + 'm ';
       res += s + 's';
       return res;
+    };
+
+    const formatNodeUptime = (seconds) => {
+      const d = Math.floor(seconds / (3600 * 24));
+      const h = Math.floor((seconds % (3600 * 24)) / 3600);
+      const m = Math.floor((seconds % 3600) / 60);
+      const dayUnit = currentLang === 'fr' ? 'j' : 'd';
+      let res = '';
+      if (d > 0) {
+        res = `${d}${dayUnit}${h > 0 ? ' ' + h + 'h' : ''}`;
+      } else if (h > 0) {
+        res = `${h}h${m > 0 ? ' ' + m + 'm' : ''}`;
+      } else {
+        res = `${m}m`;
+      }
+      return `${t('on_since')} ${res}`;
     };
 
     const updateData = async () => {
@@ -454,7 +582,7 @@
                 if (rawHum < 35.0) {
                   iconClass = 'light';
                   value = t('hum_dry');
-                } else if (rawHum <= 60.0) {
+                } else if (rawHum <= 65.0) {
                   iconClass = 'co2';
                   value = t('hum_optimal');
                 } else {
@@ -516,11 +644,15 @@
                 let rawCurr = currReading !== undefined ? (typeof currReading.value === 'number' ? currReading.value : parseFloat(currReading.value)) : 0;
                 let pct = voltageToLiIonPercent(smoothV, rawCurr);
                 
+                let battEstText = getBatteryLifetimeEst(node.id, pct, rawCurr);
+
                 let currText = '';
                 if (currReading !== undefined) {
                   let sign = rawCurr > 0 ? '+' : '';
                   let cStatus = rawCurr > 0.3 ? t('batt_charging') : (rawCurr < -0.3 ? t('batt_discharging') : t('batt_idle'));
-                  currText = `<div style="font-size: 9px; opacity: 0.75; margin-top: 2px; text-transform: uppercase;">${cStatus} (${sign}${rawCurr.toFixed(2)}mA)</div>`;
+                  currText = `<div style="font-size: 9px; opacity: 0.75; margin-top: 2px; text-transform: uppercase;">${cStatus} (${sign}${rawCurr.toFixed(2)}mA)${battEstText ? ' · ' + battEstText : ''}</div>`;
+                } else if (battEstText) {
+                  currText = `<div style="font-size: 9px; opacity: 0.75; margin-top: 2px; text-transform: uppercase;">${battEstText}</div>`;
                 }
 
                 subLabel = `<span style="font-size: 9px; opacity: 0.75; text-transform: lowercase; margin-left: 3px;">(${smoothV.toFixed(2)}V)</span>${currText}`;
@@ -575,6 +707,10 @@
             lossColor = '#fbbf24';
           }
 
+          const nodeUptimeSec = (node.seq || 0) * (node.tx_interval || 60) + (node.elapsed_sec || 0);
+          const nodeUptimeText = formatNodeUptime(nodeUptimeSec);
+          const lqiScore = calculateLQI(node.rssi, node.snr);
+
           const cardInnerHtml = `
               <div class="node-header">
                 <div class="node-title-group">
@@ -589,13 +725,17 @@
 
               <div class="node-footer">
                 <div class="node-footer-left">
-                  <div class="footer-metric">
+                  <div class="footer-metric" title="${t('tooltip_rssi')}">
                     ${getRssiIcon(node.rssi)}
                     RSSI: <b>${node.rssi} dBm</b> <span class="radio-badge rssi-${getRssiLabelClass(node.rssi)}">${getRssiLabelText(node.rssi)}</span>
                   </div>
-                  <div class="footer-metric">
+                  <div class="footer-metric" title="${t('tooltip_snr')}">
                     ${getSnrIcon(node.snr)}
                     SNR: <b>${node.snr !== undefined ? node.snr.toFixed(1) : '--'} dB</b> <span class="radio-badge snr-${getSnrLabelClass(node.snr)}">${getSnrLabelText(node.snr)}</span>
+                  </div>
+                  <div class="footer-metric" title="${t('tooltip_lqi')}">
+                    ${getLqiIcon(lqiScore)}
+                    LQI: <b>${lqiScore}%</b> <span class="radio-badge rssi-${getLqiLabelClass(lqiScore)}">${lqiScore}% RF</span>
                   </div>
                 </div>
                 <div class="node-footer-right">
@@ -613,7 +753,7 @@
                   </div>
                   <div class="status-indicator right-aligned">
                     <span class="dot ${dotClass}"></span>
-                    <span>${lastSeenText} · ${t('boot')}: <span style="color: ${getResetReasonColor(node.last_reset_reason || 8)}; font-weight: 700;">${getResetReasonLabel(node.last_reset_reason || 8)}</span></span>
+                    <span>${lastSeenText} · ${nodeUptimeText} · ${t('boot')}: <span style="color: ${getResetReasonColor(node.last_reset_reason || 8)}; font-weight: 700;">${getResetReasonLabel(node.last_reset_reason || 8)}</span></span>
                   </div>
                 </div>
               </div>`;
@@ -727,37 +867,51 @@
       }
     }
 
+    function getThemeIcons() {
+      return {
+        sun: `<svg style="width:14px; height:14px; display:block;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>`,
+        moon: `<svg style="width:14px; height:14px; display:block;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>`
+      };
+    }
+
     function initTheme() {
       const saved = localStorage.getItem('theme');
+      const btn = document.getElementById('theme-toggle');
+      const icons = getThemeIcons();
       if (saved === 'light') {
         document.documentElement.setAttribute('data-theme', 'light');
-        const btn = document.getElementById('theme-toggle');
-        if (btn) btn.innerText = '🌙';
+        if (btn) btn.innerHTML = icons.moon;
       } else {
         document.documentElement.removeAttribute('data-theme');
-        const btn = document.getElementById('theme-toggle');
-        if (btn) btn.innerText = '☀️';
+        if (btn) btn.innerHTML = icons.sun;
       }
     }
 
     function toggleTheme() {
       const current = document.documentElement.getAttribute('data-theme');
+      const btn = document.getElementById('theme-toggle');
+      const icons = getThemeIcons();
       if (current === 'light') {
         document.documentElement.removeAttribute('data-theme');
         localStorage.setItem('theme', 'dark');
-        const btn = document.getElementById('theme-toggle');
-        if (btn) btn.innerText = '☀️';
+        if (btn) btn.innerHTML = icons.sun;
       } else {
         document.documentElement.setAttribute('data-theme', 'light');
         localStorage.setItem('theme', 'light');
-        const btn = document.getElementById('theme-toggle');
-        if (btn) btn.innerText = '🌙';
+        if (btn) btn.innerHTML = icons.moon;
       }
     }
 
     function getStationAltitude() {
       const saved = localStorage.getItem('station_altitude');
       return saved !== null ? parseFloat(saved) : 96.0;
+    }
+
+    function toggleRadioLegend() {
+      const panel = document.getElementById('radio-legend-panel');
+      if (panel) {
+        panel.style.display = panel.style.display === 'none' ? 'block' : 'none';
+      }
     }
 
     initTheme();

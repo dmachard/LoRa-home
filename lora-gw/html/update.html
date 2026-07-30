@@ -43,9 +43,8 @@
 </head>
 <body class="body-center">
   <div class="card-update" id="update-card">
-    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px;">
+    <div style="margin-bottom:20px;">
       <h3 style="margin:0;" data-i18n="update_title">Gateway Firmware Update</h3>
-      <button id="lang-toggle" class="btn-lang-toggle" title="Switch Language" onclick="toggleLanguage()">🇫🇷 FR</button>
     </div>
     <form id="upload-form">
       <div class="file-input-wrapper">
@@ -115,13 +114,6 @@
         const key = el.getAttribute('data-i18n');
         el.innerText = t(key);
       });
-
-      const btn = document.getElementById('lang-toggle');
-      if (btn) btn.innerText = currentLang === 'fr' ? '🇫🇷 FR' : '🇬🇧 EN';
-    }
-
-    function toggleLanguage() {
-      setLanguage(currentLang === 'fr' ? 'en' : 'fr');
     }
 
     const form = document.getElementById('upload-form');
