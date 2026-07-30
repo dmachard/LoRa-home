@@ -298,6 +298,17 @@ void loopLoRa() {
 
   uint8_t len = HDR_SIZE + sizeof(payload) + TAG_SIZE;
 
+  // CAD (Channel Activity Detection) - Listen Before Talk
+  for (int cad_try = 0; cad_try < 3; cad_try++) {
+    int cad = radio->scanChannel();
+    if (cad == RADIOLIB_CHANNEL_FREE) {
+      break;
+    }
+    Serial.printf("CAD: channel busy, backoff attempt %d/3\n", cad_try + 1);
+    addLog("CAD busy, backoff %d/3", cad_try + 1);
+    delay(random(50, 200));
+  }
+
   int state = radio->transmit(frame, len);
 
   if (state == RADIOLIB_ERR_NONE) {
