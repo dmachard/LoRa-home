@@ -121,7 +121,7 @@ void loopBLE();
 void loopLoRa();
 
 void setup() {
-  gpio_hold_dis((gpio_num_t)8);
+  if (LORA_DIO1 >= 0) gpio_hold_dis((gpio_num_t)LORA_DIO1);
   Serial.begin(115200);
   if (esp_reset_reason() != ESP_RST_DEEPSLEEP) {
     delay(1000);

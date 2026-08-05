@@ -332,11 +332,13 @@ void loopLoRa() {
   // Configure timer wakeup (in microseconds)
   esp_sleep_enable_timer_wakeup((uint64_t)sleepSec * 1000000ULL);
 
-  // Turn OFF blue LED (GPIO 8) and hold its HIGH state during Deep Sleep
-  pinMode(8, OUTPUT);
-  digitalWrite(8, HIGH);
-  gpio_hold_en((gpio_num_t)8);
-  gpio_deep_sleep_hold_en();
+  // Turn OFF blue LED (LORA_DIO1) and hold its HIGH state during Deep Sleep
+  if (LORA_DIO1 >= 0) {
+    pinMode(LORA_DIO1, OUTPUT);
+    digitalWrite(LORA_DIO1, HIGH);
+    gpio_hold_en((gpio_num_t)LORA_DIO1);
+    gpio_deep_sleep_hold_en();
+  }
 
   // Start deep sleep (power consumption drops to ~5-10uA!)
   esp_deep_sleep_start();
