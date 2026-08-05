@@ -10,6 +10,7 @@ extern IPAddress local_IP;
 extern IPAddress gateway;
 extern IPAddress subnet;
 extern uint8_t gw_lora_chip;
+extern float gw_lora_freq;
 extern uint8_t AES_KEY[16];
 
 bool loadConfig() {
@@ -25,6 +26,7 @@ bool loadConfig() {
     gateway = IPAddress(prefs.getUInt("gateway_ip", 0));
     subnet = IPAddress(prefs.getUInt("subnet_mask", 0));
     gw_lora_chip = prefs.getUChar("lora_chip", 2);
+    gw_lora_freq = prefs.getFloat("lora_freq", LORA_FREQ);
     prefs.getBytes("aes_key", AES_KEY, 16);
     Serial.println("Configuration loaded from NVM!");
   } else {
@@ -70,6 +72,9 @@ void saveConfig(const JsonDocument &doc) {
   }
   if (doc.containsKey("lora_chip")) {
     prefs.putUChar("lora_chip", doc["lora_chip"].as<uint8_t>());
+  }
+  if (doc.containsKey("lora_freq")) {
+    prefs.putFloat("lora_freq", doc["lora_freq"].as<float>());
   }
   
   if (doc.containsKey("aes_key")) {

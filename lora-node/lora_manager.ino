@@ -96,19 +96,20 @@ void startLoRaMode() {
     }
   }
 
-  SPI.begin(SPI_SCK, SPI_MISO, SPI_MOSI, 10);
+  SPI.begin(SPI_SCK, SPI_MISO, SPI_MOSI, LORA_CS);
 
   if (config.lora_chip == 2) {
-    Serial.println("Initializing SX1262 (CS=10, DIO1=1, RST=0)...");
-    Module* mod = new Module(10, 1, 0, -1);
+    Serial.printf("Initializing SX1262 (CS=%d, DIO1=%d, RST=%d, BUSY=%d)...\n", LORA_CS, LORA_DIO1, LORA_RST, LORA_BUSY);
+    Module* mod = new Module(LORA_CS, LORA_DIO1, LORA_RST, LORA_BUSY);
     SX1262* radio62 = new SX1262(mod);
-    esp_task_wdt_reset();
+    uint32_t tInitStart = millis();
     int state = radio62->begin(config.lora_freq, config.lora_bw, config.lora_sf,
                                config.lora_cr, config.lora_sync, config.lora_power,
                                config.lora_preamble);
     esp_task_wdt_reset();
     if (state == RADIOLIB_ERR_NONE) {
-      Serial.println("SX1262 initialized successfully!");
+      radio62->setDio2AsRfSwitch(true);
+      Serial.printf("SX1262 initialized successfully in %lu ms!\n", millis() - tInitStart);
       radio = radio62;
     } else {
       Serial.printf("SX1262 initialization failed! Error code: %d\n", state);
@@ -120,8 +121,8 @@ void startLoRaMode() {
       ESP.restart();
     }
   } else {
-    Serial.println("Initializing SX1278 (CS=10, DIO0=1, RST=0)...");
-    Module* mod = new Module(10, 1, 0, -1);
+    Serial.printf("Initializing SX1278 (CS=%d, DIO0=%d, RST=%d)...\n", LORA_CS, LORA_DIO0, LORA_RST);
+    Module* mod = new Module(LORA_CS, LORA_DIO0, LORA_RST, -1);
     SX1278* radio78 = new SX1278(mod);
     esp_task_wdt_reset();
     int state = radio78->begin(config.lora_freq, config.lora_bw, config.lora_sf,
@@ -298,22 +299,17 @@ void loopLoRa() {
 
   uint8_t len = HDR_SIZE + sizeof(payload) + TAG_SIZE;
 
-  // CAD (Channel Activity Detection) - Listen Before Talk
-  for (int cad_try = 0; cad_try < 3; cad_try++) {
-    int cad = radio->scanChannel();
-    if (cad == RADIOLIB_CHANNEL_FREE) {
-      break;
-    }
-    Serial.printf("CAD: channel busy, backoff attempt %d/3\n", cad_try + 1);
-    addLog("CAD busy, backoff %d/3", cad_try + 1);
-    delay(random(50, 200));
-  }
+  // CAD (Channel Activity Detection) - Skipped for SX1262 without DIO1/BUSY interrupt wiring
+  // int cad = radio->scanChannel();
 
+  Serial.println("Starting radio transmit...");
+  uint32_t tTxStart = millis();
   int state = radio->transmit(frame, len);
+  uint32_t tTxDur = millis() - tTxStart;
 
   if (state == RADIOLIB_ERR_NONE) {
     addLog("TX OK: seq=%lu", seq);
-    Serial.printf("TX OK seq=%lu\n", seq++);
+    Serial.printf("TX OK seq=%lu (took %lu ms)\n", seq++, tTxDur);
     if (current_error_code == ERR_TX_FAILED)
       current_error_code = ERR_NONE;
   } else {
@@ -330,15 +326,17 @@ void loopLoRa() {
   uint32_t sleepSec = config.tx_interval;
   if (sleepSec == 0) sleepSec = 60; // Safety fallback
 
-  Serial.printf("Entering Deep Sleep for %u seconds (Power drops to ~5-10uA)...\n", sleepSec);
+  Serial.printf("Entering Deep Sleep for %u seconds...\n", sleepSec);
   Serial.flush();
 
   // Configure timer wakeup (in microseconds)
   esp_sleep_enable_timer_wakeup((uint64_t)sleepSec * 1000000ULL);
 
-  // Enable external RTC button on GPIO 5 (active LOW) for instant Deep Sleep wakeup to BLE mode
-  gpio_deep_sleep_wakeup_enable((gpio_num_t)EXT_BUTTON_PIN, GPIO_INTR_LOW_LEVEL);
-  esp_deep_sleep_enable_gpio_wakeup(1ULL << EXT_BUTTON_PIN, ESP_GPIO_WAKEUP_GPIO_LOW);
+  // Turn OFF blue LED (GPIO 8) and hold its HIGH state during Deep Sleep
+  pinMode(8, OUTPUT);
+  digitalWrite(8, HIGH);
+  gpio_hold_en((gpio_num_t)8);
+  gpio_deep_sleep_hold_en();
 
   // Start deep sleep (power consumption drops to ~5-10uA!)
   esp_deep_sleep_start();

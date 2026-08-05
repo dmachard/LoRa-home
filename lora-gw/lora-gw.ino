@@ -55,9 +55,10 @@ IPAddress gateway(0, 0, 0, 0);
 IPAddress subnet(0, 0, 0, 0);
 
 // ==========================================
-// GATEWAY LORA CHIP SELECTION
+// GATEWAY LORA CHIP & RADIO CONFIGURATION
 // ==========================================
 uint8_t gw_lora_chip = 2; // 1 = SX1278, 2 = SX1262
+float gw_lora_freq = LORA_FREQ;
 
 // ==========================================
 // SECURITY & AES-GCM PROPERTIES

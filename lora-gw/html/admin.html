@@ -67,7 +67,7 @@
           </svg>
           <span data-i18n="fetching_gw_params">Fetching gateway configuration parameters...</span>
         </div>
-        <div class="grid" style="grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 24px; margin-bottom: 24px;">
+        <div class="grid">
           <!-- WiFi and Auth -->
           <div class="stat-card">
             <h3 style="margin-top:0; font-size: 15px; font-weight: 700; color: #38bdf8; border-bottom:1px solid rgba(255,255,255,0.05); padding-bottom:10px; margin-bottom:15px;" data-i18n="gw_sec_wifi">WiFi Network & Security</h3>
@@ -122,11 +122,19 @@
           <!-- Gateway Hardware & Radio Card -->
           <div class="stat-card">
             <h3 style="margin-top:0; font-size: 15px; font-weight: 700; color: #38bdf8; border-bottom:1px solid rgba(255,255,255,0.05); padding-bottom:10px; margin-bottom:15px;" data-i18n="gw_sec_hw">Gateway Radio Hardware</h3>
-            <div class="form-group">
+            <div class="form-group" style="margin-bottom:12px;">
               <label for="gw_lora_chip" data-i18n="gw_lora_chip">Gateway Transceiver Chip</label>
               <select id="gw_lora_chip" required>
-                <option value="2">SX1262 (CS=10, DIO1=13, RST=11, BUSY=12)</option>
-                <option value="1">SX1278 (CS=10, DIO0=1, RST=0)</option>
+                <option value="2">SX1262</option>
+                <option value="1">SX1278</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label for="gw_lora_freq" data-i18n="gw_lora_freq">Frequency (MHz)</label>
+              <select id="gw_lora_freq" required>
+                <option value="433.0">433 MHz (Europe/Asia)</option>
+                <option value="868.0">868 MHz (Europe)</option>
+                <option value="915.0">915 MHz (Americas)</option>
               </select>
             </div>
             <div class="form-group" style="margin-top:16px;">
@@ -183,7 +191,7 @@
             </svg>
             <span data-i18n="fetching_node_params">Connecting & fetching node parameters over Bluetooth...</span>
           </div>
-          <div class="grid" style="grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 24px; margin-bottom: 24px;">
+          <div class="grid">
             <!-- Node Identity Card -->
             <div class="stat-card">
               <h3 style="margin-top:0; font-size: 15px; font-weight: 700; color: #38bdf8; border-bottom:1px solid rgba(255,255,255,0.05); padding-bottom:10px; margin-bottom:15px;" data-i18n="node_sec_identity">Node Identity</h3>
@@ -207,14 +215,18 @@
               <div class="form-group" style="margin-bottom:12px;">
                 <label for="lora_chip" data-i18n="lora_chip">LoRa Radio Chip</label>
                 <select id="lora_chip" required>
-                  <option value="2">SX1262 (433MHz / 868MHz)</option>
-                  <option value="1">SX1278 (433MHz)</option>
+                  <option value="2">SX1262</option>
+                  <option value="1">SX1278</option>
                 </select>
               </div>
               <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
                 <div class="form-group">
                   <label for="lora_freq" data-i18n="lora_freq">Frequency (MHz)</label>
-                  <input type="number" id="lora_freq" step="0.1" required>
+                  <select id="lora_freq" required>
+                    <option value="433.0">433 MHz (Europe/Asia)</option>
+                    <option value="868.0">868 MHz (Europe)</option>
+                    <option value="915.0">915 MHz (Americas)</option>
+                  </select>
                 </div>
                 <div class="form-group">
                   <label for="lora_bw" data-i18n="lora_bw">Bandwidth (kHz)</label>
@@ -340,6 +352,7 @@
         gw_station_alt_desc: "Used for Sea-Level Barometric Pressure (QNH) calculation",
         gw_sec_hw: "Gateway Radio Hardware",
         gw_lora_chip: "Gateway Transceiver Chip",
+        gw_lora_freq: "Gateway LoRa Frequency (MHz)",
         gw_aes_key: "Shared AES Key (32 hex chars / 16 bytes)",
         btn_gen_key: "Generate Random Key",
         btn_save_gw: "Save Configuration",
@@ -413,6 +426,7 @@
         gw_station_alt_desc: "Utilisé pour le calcul de la pression barométrique au niveau de la mer (QNH)",
         gw_sec_hw: "Matériel Radio de la Passerelle",
         gw_lora_chip: "Puce émetteur-récepteur de la passerelle",
+        gw_lora_freq: "Fréquence LoRa Passerelle (MHz)",
         gw_aes_key: "Clé AES partagée (32 caract. hex / 16 octets)",
         btn_gen_key: "Générer une clé aléatoire",
         btn_save_gw: "Enregistrer la configuration",
@@ -696,6 +710,7 @@
           document.getElementById('gw_gateway_ip').value = json.gateway_ip || '';
           document.getElementById('gw_subnet_mask').value = json.subnet_mask || '';
           document.getElementById('gw_lora_chip').value = json.lora_chip || 2;
+          document.getElementById('gw_lora_freq').value = json.lora_freq || 433.0;
           document.getElementById('gw_aes_key').value = json.aes_key || '';
           document.getElementById('gw_station_alt').value = localStorage.getItem('station_altitude') || '96';
           updateGwStaticFieldsVisibility();
@@ -716,6 +731,7 @@
         document.getElementById('gw_gateway_ip').value = json.gateway_ip || '';
         document.getElementById('gw_subnet_mask').value = json.subnet_mask || '';
         document.getElementById('gw_lora_chip').value = json.lora_chip || 2;
+        document.getElementById('gw_lora_freq').value = json.lora_freq || 433.0;
         document.getElementById('gw_aes_key').value = json.aes_key || '';
         document.getElementById('gw_station_alt').value = localStorage.getItem('station_altitude') || '96';
         updateGwStaticFieldsVisibility();
@@ -777,6 +793,7 @@
         gateway_ip: document.getElementById('gw_gateway_ip').value.trim(),
         subnet_mask: document.getElementById('gw_subnet_mask').value.trim(),
         lora_chip: parseInt(document.getElementById('gw_lora_chip').value),
+        lora_freq: parseFloat(document.getElementById('gw_lora_freq').value),
         aes_key: document.getElementById('gw_aes_key').value.trim()
       };
 

@@ -14,25 +14,7 @@
 #include <SensirionI2cScd4x.h>
 #include <INA226.h>
 #include <esp_mac.h>
-
-#define WDT_TIMEOUT_S 30
-
-// Default Pin Config (ESP32-C3 Hardware defaults)
-#define SPI_SCK 6
-#define SPI_MISO 2
-#define SPI_MOSI 7
-#define I2C_SDA 3
-#define I2C_SCL 4
-
-// LoRa Radio Hardware selection (1 = SX1278, 2 = SX1262)
-#ifndef LORA_HARDWARE_CHIP
-#define LORA_HARDWARE_CHIP 2
-#endif
-
-// LED and Button Config (BOOT button is GPIO 9, External RTC wakeup button is GPIO 5)
-#define BUTTON_PIN 9
-#define EXT_BUTTON_PIN 5
-int LED_PIN = 8;        // Monochrome LED (e.g. GPIO 10 on Xiao ESP32-C3, GPIO 8 on SuperMini. Set to -1 if no LED)
+#include "config.h"
 
 // Node configuration structure
 struct NodeConfig {
@@ -139,8 +121,11 @@ void loopBLE();
 void loopLoRa();
 
 void setup() {
+  gpio_hold_dis((gpio_num_t)8);
   Serial.begin(115200);
-  delay(1000);
+  if (esp_reset_reason() != ESP_RST_DEEPSLEEP) {
+    delay(1000);
+  }
 
   // I2C initialization and sensor scan
   Wire.begin(I2C_SDA, I2C_SCL);
@@ -246,7 +231,7 @@ void setup() {
   }
 
   pinMode(BUTTON_PIN, INPUT_PULLUP);
-  pinMode(EXT_BUTTON_PIN, INPUT_PULLUP);
+  if (EXT_BUTTON_PIN >= 0) pinMode(EXT_BUTTON_PIN, INPUT_PULLUP);
 
   // 1. Load NVM config and check status
   bool isConfigured = loadConfig();
@@ -271,19 +256,21 @@ void setup() {
     Serial.println("External RTC button (GPIO 5) wakeup detected from Deep Sleep! Entering BLE Config Mode...");
   }
 
-  // 3. Give 1.5s boot window allowing user to press BOOT button to enter BLE mode
-  Serial.println("Press button to enter BLE Config Mode...");
-  uint32_t startCheck = millis();
-  while (millis() - startCheck < 1500) {
-    if (digitalRead(BUTTON_PIN) == LOW) {
-      delay(50);
+  // 3. Give 1.5s boot window allowing user to press BOOT button to enter BLE mode (cold boot only)
+  if (last_reset_reason != RESET_DEEPSLEEP) {
+    Serial.println("Press button to enter BLE Config Mode...");
+    uint32_t startCheck = millis();
+    while (millis() - startCheck < 1500) {
       if (digitalRead(BUTTON_PIN) == LOW) {
-        forceConfig = true;
-        Serial.println("BOOT button press detected during startup window!");
-        break;
+        delay(50);
+        if (digitalRead(BUTTON_PIN) == LOW) {
+          forceConfig = true;
+          Serial.println("BOOT button press detected during startup window!");
+          break;
+        }
       }
+      delay(20);
     }
-    delay(20);
   }
 
   if (!isConfigured || forceConfig) {

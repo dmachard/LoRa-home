@@ -196,10 +196,19 @@ void setupBLE(bool isConfigured) {
 }
 
 void loopBLE() {
-  // If a BLE client is connected to the DataPipe, extend config mode timeout
+  static bool wasConnected = false;
   bool isConnected = (bleDataPipe != nullptr && bleDataPipe->isConnected());
   if (isConnected) {
+    wasConnected = true;
     bleStartMs = millis();
+  } else if (wasConnected) {
+    Serial.println("BLE Client disconnected. Exiting BLE config mode immediately...");
+    inConfigMode = false;
+    if (LED_PIN >= 0) digitalWrite(LED_PIN, HIGH); // Turn LED off
+    NimBLEDevice::deinit(true);
+    delay(500);
+    startLoRaMode();
+    return;
   }
 
   // Blink LED to indicate config mode

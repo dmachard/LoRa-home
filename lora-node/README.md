@@ -35,38 +35,10 @@ stateDiagram-v2
 
 ## 🛠️ 1. Wiring Diagrams
 
-### 1.1 LoRa Module (SX1278) Connection
-Connect the SPI and DIO0 pins of the SX1278 module to the hardware interface of the ESP32-C3:
+### 1.1 LoRa Module Connection (SX1262 & SX1278)
+Connect the SPI and interrupt pins of your LoRa module (SX1262 or SX1278) to the hardware interface of the ESP32-C3:
 
-```
-       +------------------------------------+
-       |             ESP32-C3               |
-       |                                    |
-       |   3V3  GND  IO6  IO2  IO7  IO10    |
-       +----+----+----+----+----+----+------+
-            |    |    |    |    |    |     
-            |    |    |    |    |    +-----------------+
-            |    |    |    |    +----------------+     |
-            |    |    |    +---------------+     |     |
-            |    |    +--------------+     |     |     |
-            |    |                   |     |     |     |
-       +----+----+-------------------+-----+-----+-----+---+
-       |   VCC  GND                 SCK   MISO  MOSI  NSS  |
-       |                                                   |
-       |                  SX1278 LoRa Module               |
-       |                                                   |
-       |   RST  DIO0                                       |
-       +----+----+-----------------------------------------+
-            |    |                                         
-            |    +-------------------+                     
-            +-------------------+    |                     
-                                |    |                     
-                            +---+----+---------------------+
-                            |  IO0  IO8                    |
-                            |            ESP32-C3          |
-                            +------------------------------+
-```
-
+#### SX1262 Pinout (Recommended for 433 / 868 / 915 MHz)
 | LoRa Module Pin | ESP32-C3 Pin | Definition in Code | Description |
 |:---|:---|:---|:---|
 | **VCC** | `3V3` | - | 3.3V Power Supply (do not connect to 5V) |
@@ -75,8 +47,23 @@ Connect the SPI and DIO0 pins of the SX1278 module to the hardware interface of 
 | **MISO** | `GPIO 2` | `SPI_MISO` | SPI Master Input Slave Output |
 | **MOSI** | `GPIO 7` | `SPI_MOSI` | SPI Master Output Slave Input |
 | **NSS / CS** | `GPIO 10` | `LORA_CS` | SPI Chip Select |
-| **RST / RESET** | `GPIO 0` | `LORA_RST` | Reset control pin |
-| **DIO0** | `GPIO 8` | `LORA_DIO0` | Interrupt output |
+| **NRESET / RST** | `GPIO 0` | `LORA_RST` | Hardware Reset control pin |
+| **DIO1** | `GPIO 1` | `LORA_DIO1` | Radio Interrupt line (`TxDone` / `RxDone`) |
+| **BUSY** | `GPIO 5` (or NC `-1`) | `LORA_BUSY` | Hardware Busy line (Recommended) |
+
+> ℹ️ **SX1262 RF Switch Note**: The firmware automatically calls `radio->setDio2AsRfSwitch(true)` to control the internal RF antenna switch via DIO2.
+
+#### SX1278 Pinout (Legacy 433 MHz)
+| LoRa Module Pin | ESP32-C3 Pin | Definition in Code | Description |
+|:---|:---|:---|:---|
+| **VCC** | `3V3` | - | 3.3V Power Supply (do not connect to 5V) |
+| **GND** | `GND` | - | Ground reference |
+| **SCK** | `GPIO 6` | `SPI_SCK` | SPI Clock line |
+| **MISO** | `GPIO 2` | `SPI_MISO` | SPI Master Input Slave Output |
+| **MOSI** | `GPIO 7` | `SPI_MOSI` | SPI Master Output Slave Input |
+| **NSS / CS** | `GPIO 10` | `LORA_CS` | SPI Chip Select |
+| **RST / RESET** | `GPIO 0` | `LORA_RST` | Hardware Reset control pin |
+| **DIO0** | `GPIO 1` | `LORA_DIO0` | Interrupt output |
 
 ---
 

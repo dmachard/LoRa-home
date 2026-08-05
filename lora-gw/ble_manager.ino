@@ -19,6 +19,7 @@ extern IPAddress local_IP;
 extern IPAddress gateway;
 extern IPAddress subnet;
 extern uint8_t gw_lora_chip;
+extern float gw_lora_freq;
 extern uint8_t AES_KEY[16];
 extern bool oled_initialized;
 extern Adafruit_SSD1306 display;
@@ -61,6 +62,7 @@ void setupBLE(bool isConfigured) {
       resp["gateway_ip"] = gateway.toString();
       resp["subnet_mask"] = subnet.toString();
       resp["lora_chip"] = gw_lora_chip;
+      resp["lora_freq"] = gw_lora_freq;
       
       char keyHex[33];
       for (int i = 0; i < 16; i++) {
