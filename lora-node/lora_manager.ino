@@ -109,6 +109,7 @@ void startLoRaMode() {
     esp_task_wdt_reset();
     if (state == RADIOLIB_ERR_NONE) {
       radio62->setDio2AsRfSwitch(true);
+      radio62->setRegulatorDCDC();
       Serial.printf("SX1262 initialized successfully in %lu ms!\n", millis() - tInitStart);
       radio = radio62;
     } else {

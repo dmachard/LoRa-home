@@ -162,6 +162,7 @@ void initLoRa() {
                            LORA_POWER, LORA_PREAMBLE);
     if (state == RADIOLIB_ERR_NONE) {
       radio62->setDio2AsRfSwitch(true);
+      radio62->setRegulatorDCDC();
       Serial.println("Gateway SX1262 initialized successfully!");
       radio = radio62;
     }
