@@ -14,19 +14,40 @@
       <div>
         <h1 data-i18n="gw_title">LoRa Home Gateway</h1>
         <div class="header-status-bar">
-          <span class="status-pill" id="gw-nodes-pill"><span class="pill-dot"></span>-- Nodes</span>
-          <span class="status-pill" id="gw-uptime-pill">Up: --</span>
-          <span class="status-pill" id="gw-wifi-pill">WiFi: --</span>
-          <span class="status-pill" id="gw-reset-pill">Boot: --</span>
+          <span class="status-item" id="gw-nodes-pill"><span class="pill-dot"></span>-- Nodes</span>
+          <span class="status-sep">•</span>
+          <span class="status-item" id="gw-uptime-pill">Up: --</span>
+          <span class="status-sep">•</span>
+          <span class="status-item" id="gw-wifi-pill">WiFi: --</span>
+          <span class="status-sep">•</span>
+          <span class="status-item" id="gw-reset-pill">Boot: --</span>
         </div>
       </div>
       <div class="header-actions">
-        <button id="legend-toggle" class="btn-lang-toggle" title="Toggle Radio Legend" onclick="toggleRadioLegend()"><svg style="width:14px; height:14px; vertical-align:-2px; margin-right:4px;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg><span data-i18n="btn_legend">Légende</span></button>
-        <button id="lang-toggle" class="btn-lang-toggle" title="Switch Language" onclick="toggleLanguage()">🇫🇷 FR</button>
-        <button id="theme-toggle" class="btn-theme-toggle" title="Toggle Light/Dark Mode" onclick="toggleTheme()">☀️</button>
-        <a href="/admin" class="btn" data-i18n="btn_admin">Administration →</a>
+        <button id="errors-toggle" class="header-btn" title="Toggle Error Logs" onclick="toggleErrorsPanel()"><svg style="width:14px; height:14px; vertical-align:-1px; margin-right:4px; color:#f87171;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg><span data-i18n="btn_errors">Erreurs</span><span id="errors-count-badge" class="badge-count">0</span></button>
+        <button id="legend-toggle" class="header-btn" title="Toggle Radio Legend" onclick="toggleRadioLegend()"><svg style="width:14px; height:14px; vertical-align:-1px; margin-right:4px;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg><span data-i18n="btn_legend">Légende</span></button>
+        <button id="lang-toggle" class="header-btn" title="Switch Language" onclick="toggleLanguage()">FR</button>
+        <button id="theme-toggle" class="header-btn btn-icon-only" title="Toggle Light/Dark Mode" onclick="toggleTheme()">☀️</button>
+        <a href="/admin" class="header-btn btn-primary" data-i18n="btn_admin">Administration →</a>
       </div>
     </header>
+
+    <!-- Error Logs Panel -->
+    <div id="errors-panel" class="legend-panel" style="display: none;">
+      <div class="legend-header">
+        <h3 style="color: #f87171; display: flex; align-items: center; gap: 8px; margin: 0; font-size: 15px; font-weight: 700;">
+          <svg style="width:16px; height:16px; color:#f87171;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+          <span data-i18n="errors_title">Erreurs Radio & Diagnostic</span>
+        </h3>
+        <div style="display: flex; align-items: center; gap: 10px;">
+          <button class="btn-lang-toggle" onclick="clearErrorLogs()" style="padding: 3px 10px; font-size: 11px; cursor: pointer;" data-i18n="btn_clear">Effacer</button>
+          <button class="legend-close" onclick="toggleErrorsPanel()">✕</button>
+        </div>
+      </div>
+      <div id="errors-terminal" style="background: #090d16; border: 1px solid rgba(255,255,255,0.08); border-radius: 8px; padding: 12px; font-family: monospace; font-size: 12px; max-height: 200px; overflow-y: auto; color: #f87171; white-space: pre-wrap; margin-top: 10px;">
+        <span style="color: #64748b;" data-i18n="no_errors_logged">Aucune erreur radio détectée.</span>
+      </div>
+    </div>
 
     <!-- Radio Legend Panel -->
     <div id="radio-legend-panel" class="legend-panel" style="display: none;">
@@ -85,6 +106,14 @@
         gw_title: "LoRa Home Gateway",
         btn_metrics: "Prometheus Metrics",
         btn_admin: "Administration →",
+        btn_hide_logs: "Hide Logs",
+        btn_show_logs: "Show Logs",
+        btn_errors: "Errors",
+        errors_title: "Radio & Diagnostic Errors",
+        no_errors_logged: "No radio errors detected. All systems operating normally.",
+        btn_clear: "Clear",
+        logs_title: "Radio Logs",
+        logs_live: "Live Auto-Refresh (2s)",
         searching: "Searching for LoRa signals",
         up: "Up",
         boot: "Boot",
@@ -143,6 +172,14 @@
         gw_title: "Passerelle LoRa",
         btn_metrics: "Métriques Prometheus",
         btn_admin: "Administration →",
+        btn_hide_logs: "Masquer les logs",
+        btn_show_logs: "Afficher les logs",
+        btn_errors: "Erreurs",
+        errors_title: "Erreurs Radio & Diagnostic",
+        no_errors_logged: "Aucune erreur radio détectée. Tous les systèmes fonctionnent normalement.",
+        btn_clear: "Effacer",
+        logs_title: "Logs Radio",
+        logs_live: "Rafraîchissement direct (2s)",
         searching: "Recherche de signaux LoRa...",
         up: "En service",
         boot: "Démarrage",
@@ -199,7 +236,35 @@
       }
     };
 
-    let currentLang = localStorage.getItem('lang') || (navigator.language && navigator.language.startsWith('fr') ? 'fr' : 'en');
+    function safeGetItem(key) {
+      try {
+        return localStorage.getItem(key);
+      } catch (e) {
+        return null;
+      }
+    }
+
+    function safeSetItem(key, value) {
+      try {
+        localStorage.setItem(key, value);
+      } catch (e) {
+        if (e.name === 'QuotaExceededError' || e.code === 22 || e.code === 1014) {
+          try {
+            for (let i = localStorage.length - 1; i >= 0; i--) {
+              const k = localStorage.key(i);
+              if (k && (k.startsWith('batt_hist_') || k.startsWith('press_hist_'))) {
+                localStorage.removeItem(k);
+              }
+            }
+            localStorage.setItem(key, value);
+            return;
+          } catch (retryErr) {}
+        }
+        console.warn(`[Storage] Failed to set ${key}:`, e);
+      }
+    }
+
+    let currentLang = safeGetItem('lang') || (navigator.language && navigator.language.startsWith('fr') ? 'fr' : 'en');
 
     function t(key, params = {}) {
       const dict = translations[currentLang] || translations.en;
@@ -212,7 +277,7 @@
 
     function setLanguage(lang) {
       currentLang = lang;
-      localStorage.setItem('lang', lang);
+      safeSetItem('lang', lang);
       document.documentElement.setAttribute('lang', lang);
       
       document.querySelectorAll('[data-i18n]').forEach(el => {
@@ -325,12 +390,14 @@
         if (stored) history = JSON.parse(stored);
       } catch(e) {}
 
-      history.push({ t: now, p: currentPct });
+      const lastEntry = history.length > 0 ? history[history.length - 1] : null;
+      if (!lastEntry || (now - lastEntry.t) >= 5 * 60 * 1000) {
+        history.push({ t: now, p: currentPct });
+      }
       const cutoff = now - (7 * 24 * 3600 * 1000);
       history = history.filter(item => item.t >= cutoff);
-      try {
-        localStorage.setItem(key, JSON.stringify(history));
-      } catch(e) {}
+      if (history.length > 200) history = history.slice(-200);
+      safeSetItem(key, JSON.stringify(history));
 
       if (history.length < 2) return '';
 
@@ -439,6 +506,46 @@
           }
         }
 
+        if (data.logs && Array.isArray(data.logs)) {
+          const errorLogs = data.logs.filter(l => {
+            if (!l.msg) return false;
+            const msg = l.msg.toLowerCase();
+            return msg.includes('auth failed') ||
+                   msg.includes('unknown') ||
+                   msg.includes('error') ||
+                   msg.includes('fail') ||
+                   msg.includes('short') ||
+                   msg.includes('corrupt') ||
+                   msg.includes('invalid') ||
+                   msg.includes('drop');
+          });
+
+          const badgeEl = document.getElementById('errors-count-badge');
+          if (badgeEl) {
+            badgeEl.innerText = errorLogs.length;
+            if (errorLogs.length > 0) {
+              badgeEl.classList.add('has-errors');
+            } else {
+              badgeEl.classList.remove('has-errors');
+            }
+          }
+
+          const errTerm = document.getElementById('errors-terminal');
+          if (errTerm) {
+            if (errorLogs.length === 0) {
+              errTerm.innerHTML = `<span style="color: #64748b;">${t('no_errors_logged')}</span>`;
+            } else {
+              errTerm.innerHTML = errorLogs.map(l => {
+                const tSec = (l.t / 1000).toFixed(1);
+                let col = '#f87171';
+                if (l.msg.includes('UNKNOWN') || l.msg.includes('short')) col = '#fbbf24';
+                return `<div style="color:${col}; margin-bottom: 2px;">[+${tSec}s] ${l.msg}</div>`;
+              }).join('');
+              errTerm.scrollTop = errTerm.scrollHeight;
+            }
+          }
+        }
+
         const onlineCount = data.nodes ? data.nodes.filter(n => n.elapsed_sec < (n.tx_interval || 60) * 2.5).length : 0;
         const totalCount = data.nodes ? data.nodes.length : 0;
         const nodesEl = document.getElementById('gw-nodes-pill');
@@ -474,51 +581,11 @@
         }
 
         const themes = [
-          { // Violet
-            primary: '#a78bfa',
-            border: 'rgba(139, 92, 246, 0.35)',
-            hoverBorder: 'rgba(139, 92, 246, 0.65)',
-            glow: 'rgba(139, 92, 246, 0.25)',
-            badgeBg: 'rgba(139, 92, 246, 0.15)',
-            badgeText: '#c084fc',
-            badgeBorder: 'rgba(139, 92, 246, 0.4)'
-          },
-          { // Sky Blue
-            primary: '#38bdf8',
-            border: 'rgba(14, 165, 233, 0.35)',
-            hoverBorder: 'rgba(14, 165, 233, 0.65)',
-            glow: 'rgba(14, 165, 233, 0.25)',
-            badgeBg: 'rgba(14, 165, 233, 0.15)',
-            badgeText: '#38bdf8',
-            badgeBorder: 'rgba(14, 165, 233, 0.4)'
-          },
-          { // Amber
-            primary: '#fbbf24',
-            border: 'rgba(245, 158, 11, 0.35)',
-            hoverBorder: 'rgba(245, 158, 11, 0.65)',
-            glow: 'rgba(245, 158, 11, 0.25)',
-            badgeBg: 'rgba(245, 158, 11, 0.15)',
-            badgeText: '#fbbf24',
-            badgeBorder: 'rgba(245, 158, 11, 0.4)'
-          },
-          { // Emerald
-            primary: '#34d399',
-            border: 'rgba(16, 185, 129, 0.35)',
-            hoverBorder: 'rgba(16, 185, 129, 0.65)',
-            glow: 'rgba(16, 185, 129, 0.25)',
-            badgeBg: 'rgba(16, 185, 129, 0.15)',
-            badgeText: '#34d399',
-            badgeBorder: 'rgba(16, 185, 129, 0.4)'
-          },
-          { // Rose
-            primary: '#fb7185',
-            border: 'rgba(244, 63, 94, 0.35)',
-            hoverBorder: 'rgba(244, 63, 94, 0.65)',
-            glow: 'rgba(244, 63, 94, 0.25)',
-            badgeBg: 'rgba(244, 63, 94, 0.15)',
-            badgeText: '#fb7185',
-            badgeBorder: 'rgba(244, 63, 94, 0.4)'
-          }
+          { primary: '#0284c7', border: 'var(--card-border-def)', hoverBorder: 'rgba(14, 165, 233, 0.4)', glow: 'rgba(14, 165, 233, 0.15)', badgeBg: 'rgba(14, 165, 233, 0.12)', badgeText: '#0284c7', badgeBorder: 'rgba(14, 165, 233, 0.25)' },
+          { primary: '#6366f1', border: 'var(--card-border-def)', hoverBorder: 'rgba(99, 102, 241, 0.4)', glow: 'rgba(99, 102, 241, 0.15)', badgeBg: 'rgba(99, 102, 241, 0.12)', badgeText: '#6366f1', badgeBorder: 'rgba(99, 102, 241, 0.25)' },
+          { primary: '#0d9488', border: 'var(--card-border-def)', hoverBorder: 'rgba(13, 148, 136, 0.4)', glow: 'rgba(13, 148, 136, 0.15)', badgeBg: 'rgba(13, 148, 136, 0.12)', badgeText: '#0d9488', badgeBorder: 'rgba(13, 148, 136, 0.25)' },
+          { primary: '#d97706', border: 'var(--card-border-def)', hoverBorder: 'rgba(217, 119, 6, 0.4)', glow: 'rgba(217, 119, 6, 0.15)', badgeBg: 'rgba(217, 119, 6, 0.12)', badgeText: '#d97706', badgeBorder: 'rgba(217, 119, 6, 0.25)' },
+          { primary: '#0891b2', border: 'var(--card-border-def)', hoverBorder: 'rgba(8, 145, 178, 0.4)', glow: 'rgba(8, 145, 178, 0.15)', badgeBg: 'rgba(8, 145, 178, 0.12)', badgeText: '#0891b2', badgeBorder: 'rgba(8, 145, 178, 0.25)' }
         ];
 
         data.nodes.forEach(node => {
@@ -711,49 +778,45 @@
           const nodeUptimeText = formatNodeUptime(nodeUptimeSec);
           const lqiScore = calculateLQI(node.rssi, node.snr);
 
+          const isDiagOpen = openDiagNodeIds.has(node.id);
+
           const cardInnerHtml = `
               <div class="node-header">
                 <div class="node-title-group">
                   <span style="font-size:10px; font-weight:700; text-transform:uppercase; letter-spacing:0.08em; color:#64748b; margin-bottom:2px;">${t('node_subtitle', { id: node.id })}</span>
-                  <span class="node-name" style="color: ${isOnline ? theme.primary : '#94a3b8'}; text-shadow: 0 0 10px ${isOnline ? theme.glow : 'transparent'};">${node.name}</span>
+                  <div style="display: flex; align-items: center; gap: 8px;">
+                    <span class="node-name" style="color: ${isOnline ? theme.primary : '#94a3b8'}; text-shadow: 0 0 10px ${isOnline ? theme.glow : 'transparent'};">${node.name}</span>
+                    <span class="dot ${dotClass}"></span>
+                  </div>
                 </div>
               </div>
               
               <div class="node-readings">
-                ${readingsHtml || `<div style="flex:1; text-align:center; color:#64748b; font-size:13px; padding:12px;">${t('no_sensors')}</div>`}
+                ${readingsHtml || `<div style="grid-column: span 2; text-align:center; color:#64748b; font-size:13px; padding:12px;">${t('no_sensors')}</div>`}
               </div>
 
               <div class="node-footer">
-                <div class="node-footer-left">
-                  <div class="footer-metric" title="${t('tooltip_rssi')}">
+                <div class="node-footer-simple">
+                  <div class="footer-metric-simple">
                     ${getRssiIcon(node.rssi)}
-                    RSSI: <b>${node.rssi} dBm</b> <span class="radio-badge rssi-${getRssiLabelClass(node.rssi)}">${getRssiLabelText(node.rssi)}</span>
+                    <span><b>${node.rssi} dBm</b> <span style="opacity: 0.7;">(${getRssiLabelText(node.rssi)})</span></span>
+                    <span class="stat-divider">•</span>
+                    <span>${lastSeenText}</span>
                   </div>
-                  <div class="footer-metric" title="${t('tooltip_snr')}">
-                    ${getSnrIcon(node.snr)}
-                    SNR: <b>${node.snr !== undefined ? node.snr.toFixed(1) : '--'} dB</b> <span class="radio-badge snr-${getSnrLabelClass(node.snr)}">${getSnrLabelText(node.snr)}</span>
-                  </div>
-                  <div class="footer-metric" title="${t('tooltip_lqi')}">
-                    ${getLqiIcon(lqiScore)}
-                    LQI: <b>${lqiScore}%</b> <span class="radio-badge rssi-${getLqiLabelClass(lqiScore)}">${lqiScore}% RF</span>
-                  </div>
+                  <button class="btn-diag-toggle" title="Diagnostic" onclick="toggleNodeDiag(${node.id})">
+                    <svg style="width:14px; height:14px; vertical-align:-2px;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
+                  </button>
                 </div>
-                <div class="node-footer-right">
-                  <div class="footer-metric right-aligned">
-                    <span style="cursor:pointer;" title="${t('reset_stats_title')}" onclick="resetNodeStats(${node.id})">${t('lost')}: <b style="color: ${lossColor}">${lostCount} (${lossPercentStr} %)</b></span>
-                    <span class="stat-divider">·</span>
-                    <span style="cursor:pointer; display:inline-flex; align-items:center; gap:2px;" title="${t('reset_stats_title')}" onclick="resetNodeStats(${node.id})">
-                      ${t('reboots')}: <b style="color: ${node.reboots > 0 ? '#fbbf24' : '#64748b'}">${node.reboots}</b>
-                      <svg style="width:11px; height:11px; opacity:0.6; transition:transform 0.3s, opacity 0.2s; margin-left:2px; vertical-align:middle;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" onmouseover="this.style.opacity='1'; this.style.transform='rotate(180deg)';" onmouseout="this.style.opacity='0.6'; this.style.transform='rotate(0deg)';">
-                        <path d="M23 4v6h-6"/>
-                        <path d="M1 20v-6h6"/>
-                        <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/>
-                      </svg>
-                    </span>
-                  </div>
-                  <div class="status-indicator right-aligned">
-                    <span class="dot ${dotClass}"></span>
-                    <span>${lastSeenText} · ${nodeUptimeText} · ${t('boot')}: <span style="color: ${getResetReasonColor(node.last_reset_reason || 8)}; font-weight: 700;">${getResetReasonLabel(node.last_reset_reason || 8)}</span></span>
+
+                <div id="node-diag-${node.id}" class="node-diag-drawer" style="display: ${isDiagOpen ? 'block' : 'none'};">
+                  <div class="diag-grid">
+                    <div class="diag-item" title="${t('tooltip_rssi')}">RSSI: <b>${node.rssi} dBm</b> <span class="radio-badge rssi-${getRssiLabelClass(node.rssi)}">${getRssiLabelText(node.rssi)}</span></div>
+                    <div class="diag-item" title="${t('tooltip_snr')}">SNR: <b>${node.snr !== undefined ? node.snr.toFixed(1) : '--'} dB</b> <span class="radio-badge snr-${getSnrLabelClass(node.snr)}">${getSnrLabelText(node.snr)}</span></div>
+                    <div class="diag-item" title="${t('tooltip_lqi')}">LQI: <b>${lqiScore}%</b> <span class="radio-badge rssi-${getLqiLabelClass(lqiScore)}">${lqiScore}% RF</span></div>
+                    <div class="diag-item">Uptime: <b>${nodeUptimeText}</b></div>
+                    <div class="diag-item">${t('boot')}: <strong style="color: ${getResetReasonColor(node.last_reset_reason || 8)};">${getResetReasonLabel(node.last_reset_reason || 8)}</strong></div>
+                    <div class="diag-item" style="cursor:pointer;" title="${t('reset_stats_title')}" onclick="resetNodeStats(${node.id})">${t('lost')}: <b style="color: ${lossColor}">${lostCount} (${lossPercentStr}%)</b></div>
+                    <div class="diag-item" style="cursor:pointer;" title="${t('reset_stats_title')}" onclick="resetNodeStats(${node.id})">Rbt: <b style="color: ${node.reboots > 0 ? '#fbbf24' : 'inherit'}">${node.reboots} ↻</b></div>
                   </div>
                 </div>
               </div>`;
@@ -832,14 +895,14 @@
         if (stored) history = JSON.parse(stored);
       } catch(e) {}
 
-      history.push({ t: now, p: currentP });
-
+      const lastEntry = history.length > 0 ? history[history.length - 1] : null;
+      if (!lastEntry || (now - lastEntry.t) >= 5 * 60 * 1000) {
+        history.push({ t: now, p: currentP });
+      }
       const cutoff = now - (3 * 3600 * 1000);
       history = history.filter(item => item.t >= cutoff);
-
-      try {
-        localStorage.setItem(key, JSON.stringify(history));
-      } catch(e) {}
+      if (history.length > 100) history = history.slice(-100);
+      safeSetItem(key, JSON.stringify(history));
 
       if (history.length < 2) return { arrow: '➔', label: t('press_stable'), diff: 0, hours: 0, rate: 0 };
 
@@ -875,7 +938,7 @@
     }
 
     function initTheme() {
-      const saved = localStorage.getItem('theme');
+      const saved = safeGetItem('theme');
       const btn = document.getElementById('theme-toggle');
       const icons = getThemeIcons();
       if (saved === 'light') {
@@ -893,17 +956,17 @@
       const icons = getThemeIcons();
       if (current === 'light') {
         document.documentElement.removeAttribute('data-theme');
-        localStorage.setItem('theme', 'dark');
+        safeSetItem('theme', 'dark');
         if (btn) btn.innerHTML = icons.sun;
       } else {
         document.documentElement.setAttribute('data-theme', 'light');
-        localStorage.setItem('theme', 'light');
+        safeSetItem('theme', 'light');
         if (btn) btn.innerHTML = icons.moon;
       }
     }
 
     function getStationAltitude() {
-      const saved = localStorage.getItem('station_altitude');
+      const saved = safeGetItem('station_altitude');
       return saved !== null ? parseFloat(saved) : 96.0;
     }
 
@@ -911,6 +974,40 @@
       const panel = document.getElementById('radio-legend-panel');
       if (panel) {
         panel.style.display = panel.style.display === 'none' ? 'block' : 'none';
+      }
+    }
+
+    function toggleErrorsPanel() {
+      const panel = document.getElementById('errors-panel');
+      if (panel) {
+        panel.style.display = panel.style.display === 'none' ? 'block' : 'none';
+      }
+    }
+
+    const openDiagNodeIds = new Set();
+
+    function toggleNodeDiag(id) {
+      const drawer = document.getElementById(`node-diag-${id}`);
+      if (drawer) {
+        const isHidden = drawer.style.display === 'none';
+        drawer.style.display = isHidden ? 'block' : 'none';
+        if (isHidden) {
+          openDiagNodeIds.add(id);
+        } else {
+          openDiagNodeIds.delete(id);
+        }
+      }
+    }
+
+    function clearErrorLogs() {
+      const errTerm = document.getElementById('errors-terminal');
+      if (errTerm) {
+        errTerm.innerHTML = `<span style="color: #64748b;">${t('no_errors_logged')}</span>`;
+      }
+      const badgeEl = document.getElementById('errors-count-badge');
+      if (badgeEl) {
+        badgeEl.innerText = '0';
+        badgeEl.classList.remove('has-errors');
       }
     }
 

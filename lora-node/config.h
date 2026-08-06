@@ -5,13 +5,14 @@
 // SYSTEM & WATCHDOG CONFIGURATION
 // ==========================================
 #define WDT_TIMEOUT_S 30
+#define ENABLE_DEEP_SLEEP true  // Set to false to disable Deep Sleep for continuous serial log debugging
 
 // ==========================================
 // HARDWARE BUTTON & LED CONFIGURATION
 // ==========================================
 #define BUTTON_PIN 9         // BOOT button for BLE Mode
 #define EXT_BUTTON_PIN -1    // External RTC Wakeup button (-1 if disabled)
-#define LED_PIN -1           // Status LED (-1 if disabled to avoid pin conflict)
+#define LED_PIN 8            // Status Blue LED (GPIO 8 on ESP32-C3 SuperMini)
 
 // ==========================================
 // I2C BUS CONFIGURATION

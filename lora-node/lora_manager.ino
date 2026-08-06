@@ -326,20 +326,28 @@ void loopLoRa() {
   uint32_t sleepSec = config.tx_interval;
   if (sleepSec == 0) sleepSec = 60; // Safety fallback
 
-  Serial.printf("Entering Deep Sleep for %u seconds...\n", sleepSec);
-  Serial.flush();
+  if (ENABLE_DEEP_SLEEP) {
+    Serial.printf("Entering Deep Sleep for %u seconds...\n", sleepSec);
+    Serial.flush();
 
-  // Configure timer wakeup (in microseconds)
-  esp_sleep_enable_timer_wakeup((uint64_t)sleepSec * 1000000ULL);
+    // Configure timer wakeup (in microseconds)
+    esp_sleep_enable_timer_wakeup((uint64_t)sleepSec * 1000000ULL);
 
-  // Turn OFF blue LED (LORA_DIO1) and hold its HIGH state during Deep Sleep
-  if (LORA_DIO1 >= 0) {
-    pinMode(LORA_DIO1, OUTPUT);
-    digitalWrite(LORA_DIO1, HIGH);
-    gpio_hold_en((gpio_num_t)LORA_DIO1);
-    gpio_deep_sleep_hold_en();
+    // Turn OFF blue LED (LORA_DIO1) and hold its HIGH state during Deep Sleep
+    if (LORA_DIO1 >= 0) {
+      pinMode(LORA_DIO1, OUTPUT);
+      digitalWrite(LORA_DIO1, HIGH);
+      gpio_hold_en((gpio_num_t)LORA_DIO1);
+      gpio_deep_sleep_hold_en();
+    }
+
+    // Start deep sleep (power consumption drops to ~5-10uA!)
+    esp_deep_sleep_start();
+  } else {
+    Serial.printf("Deep Sleep disabled in config.h. Delaying %u seconds (USB Serial remains connected)...\n", sleepSec);
+    for (uint32_t i = 0; i < sleepSec; i++) {
+      esp_task_wdt_reset();
+      delay(1000);
+    }
   }
-
-  // Start deep sleep (power consumption drops to ~5-10uA!)
-  esp_deep_sleep_start();
 }

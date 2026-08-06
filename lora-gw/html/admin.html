@@ -702,6 +702,7 @@
         try {
           const res = await fetch('/api/gw_config');
           const json = await res.json();
+          const formatFreq = (f) => parseFloat(f || 433.0).toFixed(1);
           document.getElementById('gw_wifi_ssid').value = json.wifi_ssid || '';
           document.getElementById('gw_wifi_pass').value = json.wifi_pass || '';
           document.getElementById('gw_admin_pass').value = json.admin_pass || '';
@@ -710,7 +711,7 @@
           document.getElementById('gw_gateway_ip').value = json.gateway_ip || '';
           document.getElementById('gw_subnet_mask').value = json.subnet_mask || '';
           document.getElementById('gw_lora_chip').value = json.lora_chip || 2;
-          document.getElementById('gw_lora_freq').value = json.lora_freq || 433.0;
+          document.getElementById('gw_lora_freq').value = formatFreq(json.lora_freq);
           document.getElementById('gw_aes_key').value = json.aes_key || '';
           document.getElementById('gw_station_alt').value = localStorage.getItem('station_altitude') || '96';
           updateGwStaticFieldsVisibility();
@@ -723,6 +724,7 @@
 
     gwPipe.setOnJson((json) => {
       if (json.aes_key) {
+        const formatFreq = (f) => parseFloat(f || 433.0).toFixed(1);
         document.getElementById('gw_wifi_ssid').value = json.wifi_ssid || '';
         document.getElementById('gw_wifi_pass').value = json.wifi_pass || '';
         document.getElementById('gw_admin_pass').value = json.admin_pass || '';
@@ -731,7 +733,7 @@
         document.getElementById('gw_gateway_ip').value = json.gateway_ip || '';
         document.getElementById('gw_subnet_mask').value = json.subnet_mask || '';
         document.getElementById('gw_lora_chip').value = json.lora_chip || 2;
-        document.getElementById('gw_lora_freq').value = json.lora_freq || 433.0;
+        document.getElementById('gw_lora_freq').value = formatFreq(json.lora_freq);
         document.getElementById('gw_aes_key').value = json.aes_key || '';
         document.getElementById('gw_station_alt').value = localStorage.getItem('station_altitude') || '96';
         updateGwStaticFieldsVisibility();
@@ -867,7 +869,7 @@
       if (json.aes_key) {
         document.getElementById('node_id').value = json.node_id;
         document.getElementById('node_name').value = json.node_name;
-        document.getElementById('lora_freq').value = json.lora_freq;
+        document.getElementById('lora_freq').value = parseFloat(json.lora_freq || 433.0).toFixed(1);
         document.getElementById('lora_bw').value = json.lora_bw.toFixed(1);
         document.getElementById('lora_sf').value = json.lora_sf;
         document.getElementById('lora_cr').value = json.lora_cr;

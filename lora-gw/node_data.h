@@ -25,4 +25,9 @@ struct NodeData {
   SensorReading readings[10];
 };
 
+struct GwLogEntry {
+  uint32_t timestamp_ms;
+  char message[64];
+};
+
 #endif // NODE_DATA_H

@@ -38,13 +38,14 @@ void processLoRaPacket() {
 
   if (state != RADIOLIB_ERR_NONE) {
     global_malformed_packets++;
+    addGwLog("Radio RX error (code: %d)", state);
     radio->startReceive();
     return;
   }
 
   if (len < HDR_SIZE + TAG_SIZE) {
     global_malformed_packets++;
-    Serial.printf("Packet too short: %d bytes\n", len);
+    addGwLog("Packet too short: %d bytes", len);
     radio->startReceive();
     return;
   }
@@ -52,7 +53,7 @@ void processLoRaPacket() {
   uint8_t node_id = frame[0];
   if (node_id >= MAX_NODES) {
     global_unknown_nodes++;
-    Serial.printf("Node %d | UNKNOWN NODE\n", node_id);
+    addGwLog("Node %d | UNKNOWN NODE ID", node_id);
     radio->startReceive();
     return;
   }
@@ -62,7 +63,7 @@ void processLoRaPacket() {
 
   if (payload_len > sizeof(payload)) {
     global_malformed_packets++;
-    Serial.printf("Node %d | Packet too large (%d bytes)\n", node_id, len);
+    addGwLog("Node %d | Packet too large (%d bytes)", node_id, len);
     radio->startReceive();
     return;
   }
@@ -70,7 +71,7 @@ void processLoRaPacket() {
   NodeData &n = nodes[node_id];
   if (!gcm_decrypt(frame, len, payload, sizeof(payload))) {
     n.auth_failures++;
-    Serial.printf("Node %d | AUTH FAILED\n", node_id);
+    addGwLog("Node %d | AUTH FAILED (AES key mismatch)", node_id);
     radio->startReceive();
     return;
   }
@@ -121,6 +122,8 @@ void processLoRaPacket() {
   n.packets_count++;
   n.last_reset_reason = current_reset_reason;
   n.last_error_code = current_error_code;
+
+  addGwLog("Node %d (%s) | RX OK seq=%lu (RSSI: %.1fdBm, SNR: %.1fdB)", node_id, n.name[0] ? n.name : "Node", seq, n.rssi, n.snr);
 
   if (is_sensor_payload) {
     n.tx_interval = sp.tx_interval;

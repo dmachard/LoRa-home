@@ -160,8 +160,21 @@ void handleNodesJson() {
   gw["free_heap_kb"]      = ESP.getFreeHeap() / 1024;
   gw["rx_interrupts"]     = global_rx_interrupts;
   gw["malformed_packets"] = global_malformed_packets;
+  gw["unknown_nodes"]     = global_unknown_nodes;
   gw["wifi_rssi"]         = WiFi.RSSI();
   gw["reset_reason"]      = (uint8_t)esp_reset_reason();
+
+  extern uint8_t gwLogHead;
+  extern uint8_t gwLogCount;
+  extern GwLogEntry gwLogBuffer[20];
+
+  JsonArray logs_arr = doc["logs"].to<JsonArray>();
+  for (int i = 0; i < gwLogCount; i++) {
+    int idx = (gwLogHead - gwLogCount + i + 20) % 20;
+    JsonObject entry = logs_arr.add<JsonObject>();
+    entry["t"] = gwLogBuffer[idx].timestamp_ms;
+    entry["msg"] = String(gwLogBuffer[idx].message);
+  }
 
   String out;
   out.reserve(2048);

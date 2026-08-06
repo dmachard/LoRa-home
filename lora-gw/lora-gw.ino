@@ -73,6 +73,27 @@ uint32_t global_malformed_packets = 0;
 uint32_t global_unknown_nodes = 0;
 uint32_t global_rx_interrupts = 0;
 
+GwLogEntry gwLogBuffer[20];
+uint8_t gwLogHead = 0;
+uint8_t gwLogCount = 0;
+
+void addGwLog(const char* fmt, ...) {
+  char buf[64];
+  va_list args;
+  va_start(args, fmt);
+  vsnprintf(buf, sizeof(buf), fmt, args);
+  va_end(args);
+
+  gwLogBuffer[gwLogHead].timestamp_ms = millis();
+  strncpy(gwLogBuffer[gwLogHead].message, buf, sizeof(gwLogBuffer[gwLogHead].message) - 1);
+  gwLogBuffer[gwLogHead].message[sizeof(gwLogBuffer[gwLogHead].message) - 1] = '\0';
+
+  gwLogHead = (gwLogHead + 1) % 20;
+  if (gwLogCount < 20) gwLogCount++;
+
+  Serial.println(buf);
+}
+
 // ==========================================
 // LORA PACKET MANAGEMENT
 // ==========================================
