@@ -1,5 +1,6 @@
 extern uint8_t gw_lora_chip;
 extern float gw_lora_freq;
+extern uint8_t gw_lora_sync;
 PhysicalLayer* radio = nullptr;
 volatile bool rxFlag = false;
 void IRAM_ATTR onReceive() { rxFlag = true; }
@@ -158,7 +159,7 @@ void initLoRa() {
     Serial.println("Initializing Gateway Radio: SX1262...");
     Module* mod = new Module(LORA_CS, LORA_DIO1, LORA_RST, LORA_BUSY);
     SX1262* radio62 = new SX1262(mod);
-    state = radio62->begin(gw_lora_freq, LORA_BW, LORA_SF, LORA_CR, RADIOLIB_SX126X_SYNC_WORD_PRIVATE,
+    state = radio62->begin(gw_lora_freq, LORA_BW, LORA_SF, LORA_CR, gw_lora_sync,
                            LORA_POWER, LORA_PREAMBLE);
     if (state == RADIOLIB_ERR_NONE) {
       radio62->setDio2AsRfSwitch(true);
@@ -170,7 +171,7 @@ void initLoRa() {
     Serial.println("Initializing Gateway Radio: SX1278...");
     Module* mod = new Module(LORA_CS, LORA_DIO0, LORA_RST, -1);
     SX1278* radio78 = new SX1278(mod);
-    state = radio78->begin(gw_lora_freq, LORA_BW, LORA_SF, LORA_CR, 0x12,
+    state = radio78->begin(gw_lora_freq, LORA_BW, LORA_SF, LORA_CR, gw_lora_sync,
                            LORA_POWER, LORA_PREAMBLE);
     if (state == RADIOLIB_ERR_NONE) {
       radio = radio78;

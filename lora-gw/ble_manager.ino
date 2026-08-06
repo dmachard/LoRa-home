@@ -61,8 +61,10 @@ void setupBLE(bool isConfigured) {
       resp["local_ip"] = local_IP.toString();
       resp["gateway_ip"] = gateway.toString();
       resp["subnet_mask"] = subnet.toString();
+      extern uint8_t gw_lora_sync;
       resp["lora_chip"] = gw_lora_chip;
       resp["lora_freq"] = gw_lora_freq;
+      resp["lora_sync"] = String("0x") + (gw_lora_sync < 16 ? "0" : "") + String(gw_lora_sync, HEX);
       
       char keyHex[33];
       for (int i = 0; i < 16; i++) {

@@ -132,16 +132,60 @@
             <div class="form-group">
               <label for="gw_lora_freq" data-i18n="gw_lora_freq">Frequency (MHz)</label>
               <select id="gw_lora_freq" required>
-                <option value="433.0">433 MHz (Europe/Asia)</option>
-                <option value="868.0">868 MHz (Europe)</option>
-                <option value="915.0">915 MHz (Americas)</option>
+                <option value="433.0">433.0 MHz (Europe/Asia)</option>
+                <option value="868.1">868.1 MHz (EU868 Ch 1)</option>
+                <option value="868.3">868.3 MHz (EU868 Ch 2)</option>
+                <option value="868.5">868.5 MHz (EU868 Ch 3)</option>
+                <option value="869.525">869.525 MHz (EU868 Max Power)</option>
+                <option value="915.0">915.0 MHz (Americas)</option>
               </select>
+            </div>
+            <div class="form-group" style="margin-top:12px;">
+              <label for="gw_lora_sync" data-i18n="gw_lora_sync">Sync Word (Hex)</label>
+              <input type="text" id="gw_lora_sync" required placeholder="0x12" value="0x12">
             </div>
             <div class="form-group" style="margin-top:16px;">
               <label for="gw_aes_key" data-i18n="gw_aes_key">Shared AES Key (32 hex chars / 16 bytes)</label>
               <input type="text" id="gw_aes_key" maxlength="32" minlength="32" required placeholder="Hexadecimal AES Key">
             </div>
             <button type="button" class="btn btn-secondary" onclick="generateRandomGwKey()" style="width:100%; margin-top:8px;" data-i18n="btn_gen_key">Generate Random Key</button>
+
+            <!-- ETSI 868 MHz Regulation Reference Card -->
+            <div style="margin-top: 16px; padding-top: 14px; border-top: 1px solid var(--divider-border);">
+              <div style="font-size:11px; font-weight:700; text-transform:uppercase; color:var(--label-color); margin-bottom:8px; letter-spacing:0.05em;">🇪🇺 Repères Réglementation 868 MHz (ETSI / Europe)</div>
+              <div style="overflow-x: auto; border: 1px solid var(--divider-border); border-radius: 6px;">
+                <table style="width: 100%; border-collapse: collapse; font-size: 11px; text-align: left;">
+                  <thead>
+                    <tr style="background: rgba(0,0,0,0.12); color: var(--label-color); border-bottom: 1px solid var(--divider-border);">
+                      <th style="padding: 6px 8px;">Bande</th>
+                      <th style="padding: 6px 8px;">Fréquences</th>
+                      <th style="padding: 6px 8px;">Puissance Max</th>
+                      <th style="padding: 6px 8px;">Duty Cycle</th>
+                      <th style="padding: 6px 8px;">Usage Typique</th>
+                    </tr>
+                  </thead>
+                  <tbody style="color: var(--pill-color);">
+                    <tr style="border-bottom: 1px solid var(--divider-border);">
+                      <td style="padding: 6px 8px; font-weight:700;">Bande M</td>
+                      <td style="padding: 6px 8px;">868,0 – 868,6 MHz</td>
+                      <td style="padding: 6px 8px; color: #fbbf24; font-weight:700;">14 dBm (25 mW)</td>
+                      <td style="padding: 6px 8px;">1% (36s/h)</td>
+                      <td style="padding: 6px 8px;">LoRaWAN / Standards (868.1, 868.3, 868.5)</td>
+                    </tr>
+                    <tr>
+                      <td style="padding: 6px 8px; font-weight:700;">Bande P</td>
+                      <td style="padding: 6px 8px;">869,4 – 869,65 MHz</td>
+                      <td style="padding: 6px 8px; color: #34d399; font-weight:700;">27 dBm (500 mW)</td>
+                      <td style="padding: 6px 8px;">10% (360s/h)</td>
+                      <td style="padding: 6px 8px;">Réseaux privés haute portée (869.525 MHz)</td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+              <div style="font-size:10px; color:#fbbf24; margin-top:8px; line-height:1.4;">
+                ⚠️ <b>Mot de Passe Réseau (Sync Word) :</b> <code>0x12</code> (18) est réservé aux réseaux privés (LoRa@Home). N'utilisez <code>0x34</code> (52) que si vous recherchez une interopérabilité explicite avec un réseau LoRaWAN public (TTN, ChirpStack).
+              </div>
+            </div>
           </div>
         </div>
 
@@ -223,9 +267,12 @@
                 <div class="form-group">
                   <label for="lora_freq" data-i18n="lora_freq">Frequency (MHz)</label>
                   <select id="lora_freq" required>
-                    <option value="433.0">433 MHz (Europe/Asia)</option>
-                    <option value="868.0">868 MHz (Europe)</option>
-                    <option value="915.0">915 MHz (Americas)</option>
+                    <option value="433.0">433.0 MHz (Europe/Asia)</option>
+                    <option value="868.1">868.1 MHz (EU868 Ch 1)</option>
+                    <option value="868.3">868.3 MHz (EU868 Ch 2)</option>
+                    <option value="868.5">868.5 MHz (EU868 Ch 3)</option>
+                    <option value="869.525">869.525 MHz (EU868 Max Power)</option>
+                    <option value="915.0">915.0 MHz (Americas)</option>
                   </select>
                 </div>
                 <div class="form-group">
@@ -258,6 +305,7 @@
                 <div class="form-group">
                   <label for="lora_sync" data-i18n="lora_sync">Sync Word (Hex)</label>
                   <input type="text" id="lora_sync" required>
+                  <span style="font-size:10px; color:#fbbf24; display:block; margin-top:4px;">⚠️ 0x12 (18) = Réseau privé (LoRa@Home). N'utiliser 0x34 que pour LoRaWAN public.</span>
                 </div>
                 <div class="form-group">
                   <label for="lora_power" data-i18n="lora_power">TX Power (dBm)</label>
@@ -702,7 +750,7 @@
         try {
           const res = await fetch('/api/gw_config');
           const json = await res.json();
-          const formatFreq = (f) => parseFloat(f || 433.0).toFixed(1);
+          const formatFreq = (f) => { const v = parseFloat(f || 433.0); return v === 869.525 ? "869.525" : v.toFixed(1); };
           document.getElementById('gw_wifi_ssid').value = json.wifi_ssid || '';
           document.getElementById('gw_wifi_pass').value = json.wifi_pass || '';
           document.getElementById('gw_admin_pass').value = json.admin_pass || '';
@@ -712,6 +760,7 @@
           document.getElementById('gw_subnet_mask').value = json.subnet_mask || '';
           document.getElementById('gw_lora_chip').value = json.lora_chip || 2;
           document.getElementById('gw_lora_freq').value = formatFreq(json.lora_freq);
+          document.getElementById('gw_lora_sync').value = json.lora_sync || '0x12';
           document.getElementById('gw_aes_key').value = json.aes_key || '';
           document.getElementById('gw_station_alt').value = localStorage.getItem('station_altitude') || '96';
           updateGwStaticFieldsVisibility();
@@ -724,7 +773,7 @@
 
     gwPipe.setOnJson((json) => {
       if (json.aes_key) {
-        const formatFreq = (f) => parseFloat(f || 433.0).toFixed(1);
+        const formatFreq = (f) => { const v = parseFloat(f || 433.0); return v === 869.525 ? "869.525" : v.toFixed(1); };
         document.getElementById('gw_wifi_ssid').value = json.wifi_ssid || '';
         document.getElementById('gw_wifi_pass').value = json.wifi_pass || '';
         document.getElementById('gw_admin_pass').value = json.admin_pass || '';
@@ -734,6 +783,7 @@
         document.getElementById('gw_subnet_mask').value = json.subnet_mask || '';
         document.getElementById('gw_lora_chip').value = json.lora_chip || 2;
         document.getElementById('gw_lora_freq').value = formatFreq(json.lora_freq);
+        document.getElementById('gw_lora_sync').value = json.lora_sync || '0x12';
         document.getElementById('gw_aes_key').value = json.aes_key || '';
         document.getElementById('gw_station_alt').value = localStorage.getItem('station_altitude') || '96';
         updateGwStaticFieldsVisibility();
@@ -796,6 +846,7 @@
         subnet_mask: document.getElementById('gw_subnet_mask').value.trim(),
         lora_chip: parseInt(document.getElementById('gw_lora_chip').value),
         lora_freq: parseFloat(document.getElementById('gw_lora_freq').value),
+        lora_sync: document.getElementById('gw_lora_sync').value.trim(),
         aes_key: document.getElementById('gw_aes_key').value.trim()
       };
 
@@ -869,7 +920,8 @@
       if (json.aes_key) {
         document.getElementById('node_id').value = json.node_id;
         document.getElementById('node_name').value = json.node_name;
-        document.getElementById('lora_freq').value = parseFloat(json.lora_freq || 433.0).toFixed(1);
+        const formatFreq = (f) => { const v = parseFloat(f || 433.0); return v === 869.525 ? "869.525" : v.toFixed(1); };
+        document.getElementById('lora_freq').value = formatFreq(json.lora_freq);
         document.getElementById('lora_bw').value = json.lora_bw.toFixed(1);
         document.getElementById('lora_sf').value = json.lora_sf;
         document.getElementById('lora_cr').value = json.lora_cr;

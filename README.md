@@ -1,4 +1,4 @@
-# LoRa Home Gateway & Sensor Nodes
+# LoRa@Home
 
 An end-to-end telemetry system featuring a modular **ESP32-C6 Web Gateway** and configurable **ESP32-C3 Sensor Client Nodes** transmitting encrypted environmental data using **LoRa (433 MHz)** and **AES-128 GCM** security.
 

@@ -59,6 +59,7 @@ IPAddress subnet(0, 0, 0, 0);
 // ==========================================
 uint8_t gw_lora_chip = 2; // 1 = SX1278, 2 = SX1262
 float gw_lora_freq = LORA_FREQ;
+uint8_t gw_lora_sync = 0x12;
 
 // ==========================================
 // SECURITY & AES-GCM PROPERTIES
