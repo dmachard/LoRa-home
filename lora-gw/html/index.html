@@ -707,7 +707,7 @@
         data.nodes.forEach(node => {
           const interval = node.tx_interval || 60;
           const offlineThreshold = interval * 2.5;
-          const hideThreshold = interval * 5;
+          const hideThreshold = 86400; // Keep offline nodes visible for 24h as Hors-ligne
 
           const cardId = `node-card-${node.id}`;
           let existingCard = document.getElementById(cardId);
@@ -720,8 +720,8 @@
           const isOnline = node.elapsed_sec < offlineThreshold;
           const statusClass = isOnline ? '' : 'offline';
           const lastSeenText = currentLang === 'fr'
-            ? `Vu ${formatUptime(node.elapsed_sec)} ${t('ago')}`
-            : `Seen ${formatUptime(node.elapsed_sec)} ${t('ago')}`;
+            ? `Vu il y a ${formatUptime(node.elapsed_sec)}`
+            : `Seen ${formatUptime(node.elapsed_sec)} ago`;
 
           let dotClass = isOnline ? '' : 'offline';
           const theme = themes[(node.id || 0) % themes.length];
@@ -905,7 +905,7 @@
                 <div class="node-footer-simple">
                   <div class="footer-metric-simple">
                     ${getRssiIcon(node.rssi, link)}
-                    <span><b>${node.rssi} dBm</b> <span style="opacity: 0.8; font-weight: 600;">(Marge: +${link.rssiMarginDb} dB)</span></span>
+                    <span><b>${node.rssi} dBm</b> <span style="opacity: 0.85; font-weight: 600;">(${link.qualityLabel})</span></span>
                     <span class="stat-divider">•</span>
                     <span>${lastSeenText}</span>
                   </div>
@@ -1023,6 +1023,12 @@
       else if (rate <= -0.8) { arrow = '↘'; label = t('press_falling'); }
 
       return { arrow, label, diff: diffP, hours: Math.min(3, Math.round(hours * 10) / 10), rate };
+    }
+
+    function getPressureTrendText(nodeId, currentP) {
+      const res = getBarometricTrend(nodeId, currentP);
+      if (!res || !res.arrow) return '';
+      return `${res.arrow} ${res.label}`;
     }
 
     async function resetNodeStats(nodeId) {
