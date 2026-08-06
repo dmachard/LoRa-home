@@ -62,6 +62,7 @@ float gw_lora_freq = LORA_FREQ;
 uint8_t gw_lora_sync = 0x12;
 uint8_t gw_lora_sf = LORA_SF;
 float gw_lora_bw = LORA_BW;
+uint8_t gw_lora_cr = LORA_CR;
 
 // ==========================================
 // SECURITY & AES-GCM PROPERTIES

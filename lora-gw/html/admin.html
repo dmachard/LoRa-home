@@ -174,8 +174,8 @@
                     <input type="number" id="gw_lora_sf" min="6" max="12" value="9" required>
                   </div>
                   <div class="form-group">
-                    <label for="gw_lora_sync" data-i18n="gw_lora_sync">Sync Word (Hex)</label>
-                    <input type="text" id="gw_lora_sync" required placeholder="0x12" value="0x12">
+                    <label for="gw_lora_cr" data-i18n="gw_lora_cr">Coding Rate (CR)</label>
+                    <input type="number" id="gw_lora_cr" min="5" max="8" value="5" required>
                   </div>
                 </div>
                 <div class="form-group" style="margin-top:12px;">
@@ -460,6 +460,7 @@
         gw_lora_freq: "Gateway LoRa Frequency (MHz)",
         gw_lora_bw: "Gateway Bandwidth (kHz)",
         gw_lora_sf: "Gateway Spreading Factor (SF)",
+        gw_lora_cr: "Gateway Coding Rate (CR)",
         gw_lora_sync: "Gateway Sync Word (Hex)",
         gw_aes_key: "Shared AES Key (32 hex chars / 16 bytes)",
         btn_gen_key: "Generate Random Key",
@@ -537,6 +538,7 @@
         gw_lora_freq: "Fréquence LoRa Passerelle (MHz)",
         gw_lora_bw: "Largeur de bande Passerelle (kHz)",
         gw_lora_sf: "Facteur d'étalement Passerelle (SF)",
+        gw_lora_cr: "Taux de codage Passerelle (CR)",
         gw_lora_sync: "Mot de passe Réseau Passerelle (Sync Word)",
         gw_aes_key: "Clé AES partagée (32 caract. hex / 16 octets)",
         btn_gen_key: "Générer une clé aléatoire",
@@ -820,6 +822,7 @@
           document.getElementById('gw_lora_freq').value = formatFreq(json.lora_freq);
           document.getElementById('gw_lora_bw').value = parseFloat(json.lora_bw || 125.0).toFixed(1);
           document.getElementById('gw_lora_sf').value = json.lora_sf || 9;
+          document.getElementById('gw_lora_cr').value = json.lora_cr || 5;
           document.getElementById('gw_lora_sync').value = json.lora_sync || '0x12';
           document.getElementById('gw_aes_key').value = json.aes_key || '';
           document.getElementById('gw_station_alt').value = localStorage.getItem('station_altitude') || '96';
@@ -845,6 +848,7 @@
         document.getElementById('gw_lora_freq').value = formatFreq(json.lora_freq);
         document.getElementById('gw_lora_bw').value = parseFloat(json.lora_bw || 125.0).toFixed(1);
         document.getElementById('gw_lora_sf').value = json.lora_sf || 9;
+        document.getElementById('gw_lora_cr').value = json.lora_cr || 5;
         document.getElementById('gw_lora_sync').value = json.lora_sync || '0x12';
         document.getElementById('gw_aes_key').value = json.aes_key || '';
         document.getElementById('gw_station_alt').value = localStorage.getItem('station_altitude') || '96';
@@ -910,6 +914,7 @@
         lora_freq: parseFloat(document.getElementById('gw_lora_freq').value),
         lora_bw: parseFloat(document.getElementById('gw_lora_bw').value),
         lora_sf: parseInt(document.getElementById('gw_lora_sf').value),
+        lora_cr: parseInt(document.getElementById('gw_lora_cr').value),
         lora_sync: document.getElementById('gw_lora_sync').value.trim(),
         aes_key: document.getElementById('gw_aes_key').value.trim()
       };

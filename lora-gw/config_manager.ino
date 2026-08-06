@@ -14,6 +14,7 @@ extern float gw_lora_freq;
 extern uint8_t gw_lora_sync;
 extern uint8_t gw_lora_sf;
 extern float gw_lora_bw;
+extern uint8_t gw_lora_cr;
 extern uint8_t AES_KEY[16];
 
 bool loadConfig() {
@@ -33,6 +34,7 @@ bool loadConfig() {
     gw_lora_sync = prefs.getUChar("lora_sync", 0x12);
     gw_lora_sf = prefs.getUChar("lora_sf", LORA_SF);
     gw_lora_bw = prefs.getFloat("lora_bw", LORA_BW);
+    gw_lora_cr = prefs.getUChar("lora_cr", LORA_CR);
     prefs.getBytes("aes_key", AES_KEY, 16);
     Serial.println("Configuration loaded from NVM!");
   } else {
@@ -95,6 +97,9 @@ void saveConfig(const JsonDocument &doc) {
   }
   if (doc.containsKey("lora_bw")) {
     prefs.putFloat("lora_bw", doc["lora_bw"].as<float>());
+  }
+  if (doc.containsKey("lora_cr")) {
+    prefs.putUChar("lora_cr", doc["lora_cr"].as<uint8_t>());
   }
   
   if (doc.containsKey("aes_key")) {
