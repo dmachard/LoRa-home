@@ -155,6 +155,9 @@ void handleNodesJson() {
     }
   }
 
+  extern uint8_t gw_lora_sf;
+  extern float gw_lora_bw;
+  extern uint8_t gw_lora_cr;
   JsonObject gw = doc["gateway"].to<JsonObject>();
   gw["uptime_sec"]        = millis() / 1000;
   gw["free_heap_kb"]      = ESP.getFreeHeap() / 1024;
@@ -163,6 +166,9 @@ void handleNodesJson() {
   gw["unknown_nodes"]     = global_unknown_nodes;
   gw["wifi_rssi"]         = WiFi.RSSI();
   gw["reset_reason"]      = (uint8_t)esp_reset_reason();
+  gw["lora_sf"]           = gw_lora_sf;
+  gw["lora_bw"]           = gw_lora_bw;
+  gw["lora_cr"]           = gw_lora_cr;
 
   extern uint8_t gwLogHead;
   extern uint8_t gwLogCount;
