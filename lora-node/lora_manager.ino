@@ -270,11 +270,15 @@ void loopLoRa() {
     }
   }
 
+  uint8_t actual_count = min((int)payload.count, 10);
+  payload.count = actual_count;
   payload.reset_reason = last_reset_reason;
   payload.error_code = current_error_code;
   payload.tx_interval = config.tx_interval;
   memset(payload.name, 0, sizeof(payload.name));
   strncpy(payload.name, config.node_name, sizeof(payload.name) - 1);
+
+  uint8_t actual_payload_len = SENSOR_PAYLOAD_HDR_SIZE + (actual_count * sizeof(SensorReading));
 
   uint8_t frame[128];
   uint8_t iv[12] = {0};
@@ -295,10 +299,10 @@ void loopLoRa() {
   gcm.setKey(config.aes_key, 16);
   gcm.setIV(iv, 12);
   gcm.addAuthData(frame, HDR_SIZE);
-  gcm.encrypt(frame + HDR_SIZE, (uint8_t *)&payload, sizeof(payload));
-  gcm.computeTag(frame + HDR_SIZE + sizeof(payload), TAG_SIZE);
+  gcm.encrypt(frame + HDR_SIZE, (uint8_t *)&payload, actual_payload_len);
+  gcm.computeTag(frame + HDR_SIZE + actual_payload_len, TAG_SIZE);
 
-  uint8_t len = HDR_SIZE + sizeof(payload) + TAG_SIZE;
+  uint8_t len = HDR_SIZE + actual_payload_len + TAG_SIZE;
 
   // CAD (Channel Activity Detection) - Skipped for SX1262 without DIO1/BUSY interrupt wiring
   // int cad = radio->scanChannel();

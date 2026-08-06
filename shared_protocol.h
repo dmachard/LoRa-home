@@ -22,12 +22,14 @@ struct SensorReading {
 
 struct SensorPayload {
   uint8_t count;               // Number of readings in array (max 10)
-  SensorReading readings[10];  // Readings array
-  uint8_t reset_reason;
-  uint8_t error_code;
-  uint16_t tx_interval;
-  char name[8];
+  uint8_t reset_reason;        // Node reset reason
+  uint8_t error_code;          // Node error code
+  uint16_t tx_interval;        // Transmission interval (seconds)
+  char name[8];                // Node name string
+  SensorReading readings[10];  // Readings array (AT THE END for dynamic length transmission)
 } __attribute__((packed));
+
+#define SENSOR_PAYLOAD_HDR_SIZE 13
 
 struct ReadingTypeDefinition {
   uint8_t type;

@@ -21,7 +21,7 @@ The **LoRa Home Gateway & Node** ecosystem features plug-and-play **automatic I2
 On every power-on or soft reset:
 1. The **ESP32-C3 Node** runs an **I2C Scanner** routine over `I2C_SDA` (GPIO 3) and `I2C_SCL` (GPIO 4).
 2. For each detected sensor, the corresponding driver instance is allocated and initialized.
-3. During telemetry measurement loops, valid readings are packed into the 43-byte binary `SensorPayload` array (up to 6 distinct readings per packet).
+3. During telemetry measurement loops, valid readings are packed into the binary `SensorPayload` structure. Transmission encrypts only the active dynamic byte length ($13\text{B header} + N \times 5\text{B readings}$, up to 10 readings per packet) to minimize Time-on-Air.
 4. Physical values are scaled into fixed-point signed integers (`int32_t`) before encryption to save radio bandwidth:
    - **Temperatures:** Multiplied by `100` ($21.45 \text{ °C} \rightarrow 2145$)
    - **Humidity:** Multiplied by `100` ($48.20 \text{ \%} \rightarrow 4820$)

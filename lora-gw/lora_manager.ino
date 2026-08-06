@@ -85,12 +85,12 @@ void processLoRaPacket() {
   uint8_t current_reset_reason = 0;
   uint8_t current_error_code = 0;
 
-  bool is_sensor_payload = (payload_len >= sizeof(SensorPayload));
+  bool is_sensor_payload = (payload_len >= SENSOR_PAYLOAD_HDR_SIZE);
   SensorPayload sp;
   memset(&sp, 0, sizeof(sp));
 
   if (is_sensor_payload) {
-    memcpy(&sp, payload, sizeof(SensorPayload));
+    memcpy(&sp, payload, min((size_t)payload_len, sizeof(sp)));
     current_reset_reason = sp.reset_reason;
     current_error_code = sp.error_code;
   }
