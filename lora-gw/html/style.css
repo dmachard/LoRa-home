@@ -306,10 +306,16 @@ h1 {
 .metric-icon.batt { color: #10b981; }
 
 .metric-value {
-  font-size: 22px;
-  font-weight: 800;
+  font-size: 20px;
+  font-weight: 700;
   color: var(--val-color);
-  letter-spacing: -0.02em;
+  letter-spacing: -0.01em;
+}
+
+.metric-value.text-val {
+  font-size: 16px;
+  font-weight: 700;
+  letter-spacing: 0;
 }
 
 .metric-unit {
