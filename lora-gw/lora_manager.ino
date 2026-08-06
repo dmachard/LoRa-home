@@ -38,7 +38,9 @@ void processLoRaPacket() {
 
   if (state != RADIOLIB_ERR_NONE) {
     global_malformed_packets++;
-    addGwLog("Radio RX error (code: %d)", state);
+    float rssi = radio->getRSSI();
+    float snr = radio->getSNR();
+    addGwLog("Radio RX error (code: %d | RSSI: %.0fdBm | SNR: %.1fdB)", state, rssi, snr);
     radio->startReceive();
     return;
   }
