@@ -12,6 +12,8 @@ extern IPAddress subnet;
 extern uint8_t gw_lora_chip;
 extern float gw_lora_freq;
 extern uint8_t gw_lora_sync;
+extern uint8_t gw_lora_sf;
+extern float gw_lora_bw;
 extern uint8_t AES_KEY[16];
 
 bool loadConfig() {
@@ -29,6 +31,8 @@ bool loadConfig() {
     gw_lora_chip = prefs.getUChar("lora_chip", 2);
     gw_lora_freq = prefs.getFloat("lora_freq", LORA_FREQ);
     gw_lora_sync = prefs.getUChar("lora_sync", 0x12);
+    gw_lora_sf = prefs.getUChar("lora_sf", LORA_SF);
+    gw_lora_bw = prefs.getFloat("lora_bw", LORA_BW);
     prefs.getBytes("aes_key", AES_KEY, 16);
     Serial.println("Configuration loaded from NVM!");
   } else {
@@ -85,6 +89,12 @@ void saveConfig(const JsonDocument &doc) {
       syncVal = doc["lora_sync"].as<uint8_t>();
     }
     prefs.putUChar("lora_sync", syncVal);
+  }
+  if (doc.containsKey("lora_sf")) {
+    prefs.putUChar("lora_sf", doc["lora_sf"].as<uint8_t>());
+  }
+  if (doc.containsKey("lora_bw")) {
+    prefs.putFloat("lora_bw", doc["lora_bw"].as<float>());
   }
   
   if (doc.containsKey("aes_key")) {

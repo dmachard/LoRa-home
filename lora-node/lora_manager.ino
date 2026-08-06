@@ -96,6 +96,8 @@ void startLoRaMode() {
     }
   }
 
+  Serial.printf("Radio Config: Node ID=%d, Name='%s', Freq=%.3f MHz, BW=%.1f kHz, SF=%d, Sync=0x%02X, Power=%d dBm\n",
+                config.node_id, config.node_name, config.lora_freq, config.lora_bw, config.lora_sf, config.lora_sync, config.lora_power);
   SPI.begin(SPI_SCK, SPI_MISO, SPI_MOSI, LORA_CS);
 
   if (config.lora_chip == 2) {

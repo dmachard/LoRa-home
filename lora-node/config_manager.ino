@@ -9,7 +9,7 @@ bool loadConfig() {
     esp_read_mac(mac, ESP_MAC_WIFI_STA);
     config.node_id = (mac[5] % 15) + 1; // Automatic unique ID between 1 and 15
     snprintf(config.node_name, sizeof(config.node_name), "NODE-%02X", mac[5]);
-    config.lora_freq = 433.0f;
+    config.lora_freq = 868.1f;
     config.lora_bw = 125.0f;
     config.lora_sf = 9;
     config.lora_cr = 5;
@@ -23,7 +23,7 @@ bool loadConfig() {
     Serial.println("NVM configuration loaded!");
     config.node_id = prefs.getUChar("node_id", 3);
     prefs.getString("node_name", "NODE").toCharArray(config.node_name, sizeof(config.node_name));
-    config.lora_freq = prefs.getFloat("lora_freq", 433.0f);
+    config.lora_freq = prefs.getFloat("lora_freq", 868.1f);
     config.lora_bw = prefs.getFloat("lora_bw", 125.0f);
     config.lora_sf = prefs.getUChar("lora_sf", 9);
     config.lora_cr = prefs.getUChar("lora_cr", 5);
