@@ -4,7 +4,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Dashboard - LoRa Home Gateway</title>
+  <title>Dashboard - LoRa@Home</title>
   <link rel="stylesheet" href="style.css">
 </head>
 
@@ -12,7 +12,7 @@
   <div class="container">
     <header>
       <div>
-        <h1 data-i18n="gw_title">LoRa Home Gateway</h1>
+        <h1 data-i18n="gw_title">LoRa@Home</h1>
         <div class="header-status-bar">
           <span class="status-item" id="gw-nodes-pill"><span class="pill-dot"></span>-- Nodes</span>
           <span class="status-sep">•</span>
@@ -103,7 +103,7 @@
   <script>
     const translations = {
       en: {
-        gw_title: "LoRa Home Gateway",
+        gw_title: "LoRa@Home",
         btn_metrics: "Prometheus Metrics",
         btn_admin: "Administration →",
         btn_hide_logs: "Hide Logs",
@@ -183,10 +183,11 @@
         legend_lqi: "<b>LQI</b> (Link Quality Index): Composite RF health score combining 40% RSSI margin and 60% SNR margin relative to theoretical limits.",
         tooltip_rssi: "RSSI: Power in dBm compared to theoretical receiver sensitivity",
         tooltip_snr: "SNR: Signal clarity compared to minimum SF demodulation threshold",
-        tooltip_lqi: "LQI: Composite Link Quality Score based on RSSI & SNR margins"
+        tooltip_lqi: "LQI: Composite Link Quality Score based on RSSI & SNR margins",
+        duplicates: "Duplicates"
       },
       fr: {
-        gw_title: "Passerelle LoRa",
+        gw_title: "LoRa@Home",
         btn_metrics: "Métriques Prometheus",
         btn_admin: "Administration →",
         btn_hide_logs: "Masquer les logs",
@@ -266,7 +267,8 @@
         legend_lqi: "<b>LQI</b> (Qualité du Lien RF) : Score composite combinant 40% de marge RSSI et 60% de marge SNR par rapport aux limites physiques.",
         tooltip_rssi: "RSSI: Puissance en dBm comparée à la sensibilité théorique du récepteur",
         tooltip_snr: "SNR: Clarté en dB comparée au seuil minimal de démodulation du SF",
-        tooltip_lqi: "LQI: Score de Qualité du Lien calculé à partir des marges RSSI et SNR"
+        tooltip_lqi: "LQI: Score de Qualité du Lien calculé à partir des marges RSSI et SNR",
+        duplicates: "Doublons"
       }
     };
 
@@ -923,6 +925,7 @@
                     <div class="diag-item">${t('boot')}: <strong style="color: ${getResetReasonColor(node.last_reset_reason || 8)};">${getResetReasonLabel(node.last_reset_reason || 8)}</strong></div>
                     <div class="diag-item" style="cursor:pointer;" title="${t('reset_stats_title')}" onclick="resetNodeStats(${node.id})">${t('lost')}: <b style="color: ${lossColor}">${lostCount} (${lossPercentStr}%)</b></div>
                     <div class="diag-item" style="cursor:pointer;" title="${t('reset_stats_title')}" onclick="resetNodeStats(${node.id})">Rbt: <b style="color: ${node.reboots > 0 ? '#fbbf24' : 'inherit'}">${node.reboots} ↻</b></div>
+                    <div class="diag-item">${t('duplicates')}: <b>${node.duplicate_packets || 0}</b></div>
                   </div>
                 </div>
               </div>`;

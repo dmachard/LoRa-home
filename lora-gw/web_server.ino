@@ -43,6 +43,9 @@ void handleMetrics() {
   out +=
       "# HELP lora_packets_lost_total Total lost packets per node\n";
   out += "# TYPE lora_packets_lost_total counter\n";
+  out +=
+      "# HELP lora_packets_duplicate_total Total duplicate packets received per node\n";
+  out += "# TYPE lora_packets_duplicate_total counter\n";
 
   uint32_t now = millis();
   for (int i = 0; i < MAX_NODES; i++) {
@@ -77,6 +80,9 @@ void handleMetrics() {
     out += line;
     snprintf(line, sizeof(line), "lora_packets_lost_total%s %lu\n", label,
              nodes[i].packets_lost);
+    out += line;
+    snprintf(line, sizeof(line), "lora_packets_duplicate_total%s %lu\n", label,
+             nodes[i].duplicate_packets);
     out += line;
     snprintf(line, sizeof(line), "lora_node_reset_reason%s %u\n", label,
              nodes[i].last_reset_reason);
@@ -134,6 +140,7 @@ void handleNodesJson() {
     node["reboots"]          = nodes[i].reboots;
     node["packets_count"]    = nodes[i].packets_count;
     node["packets_lost"]     = nodes[i].packets_lost;
+    node["duplicate_packets"]  = nodes[i].duplicate_packets;
     node["loss_percent"]     = loss_pct;
     node["last_reset_reason"]= nodes[i].last_reset_reason;
     node["last_error_code"]  = nodes[i].last_error_code;
