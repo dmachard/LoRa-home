@@ -128,9 +128,9 @@
         quality_correct: "Fair",
         quality_limite: "Marginal",
         quality_perdu: "Lost",
-        rssi_marge_tres_confortable: "Very Comfortable",
-        rssi_marge_confortable: "Comfortable",
-        rssi_marge_suffisante: "Sufficient",
+        rssi_marge_tres_confortable: "Excellent",
+        rssi_marge_confortable: "Very Good",
+        rssi_marge_suffisante: "Good",
         rssi_marge_limite: "Marginal",
         rssi_marge_insuffisante: "Insufficient",
         snr_marge_excellent: "Excellent",
@@ -212,9 +212,9 @@
         quality_correct: "Correct",
         quality_limite: "Limite",
         quality_perdu: "Perdu",
-        rssi_marge_tres_confortable: "Très confortable",
-        rssi_marge_confortable: "Confortable",
-        rssi_marge_suffisante: "Suffisant",
+        rssi_marge_tres_confortable: "Excellent",
+        rssi_marge_confortable: "Très bon",
+        rssi_marge_suffisante: "Bon",
         rssi_marge_limite: "Limite",
         rssi_marge_insuffisante: "Insuffisant",
         snr_marge_excellent: "Excellent",
@@ -259,7 +259,7 @@
         confirm_reset_stats: "Réinitialiser les statistiques et le compteur pour le nœud {id} ?",
         reset_stats_title: "Cliquer pour réinitialiser les statistiques du nœud",
         node_subtitle: "Nœud LoRa #{id}",
-        on_since: "Allumé depuis",
+        on_since: "Depuis",
         btn_legend: "Légende",
         legend_title: "Légende des métriques Radio LoRa",
         legend_rssi: "<b>RSSI</b> (Puissance du Signal) : Force en dBm évaluée selon la sensibilité théorique du récepteur SX1262 (SF & BW).",
@@ -770,7 +770,7 @@
                 unit = '';
                 label = t('sensor_pressure');
                 subLabel = `<span style="font-size: 9px; opacity: 0.75; text-transform: lowercase; margin-left: 3px;">(${rawPress.toFixed(0)}hPa)</span>`;
-                iconSvg = '<path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/>';
+                iconSvg = '<path d="m12 14 4-4"/><path d="M3.34 19a10 10 0 1 1 17.32 0"/>';
 
                 let rawQnh = typeof value === 'number' ? value : parseFloat(value);
                 let trendTxt = getPressureTrendText(node.id, rawQnh);
@@ -925,7 +925,6 @@
                     <div class="diag-item">${t('boot')}: <strong style="color: ${getResetReasonColor(node.last_reset_reason || 8)};">${getResetReasonLabel(node.last_reset_reason || 8)}</strong></div>
                     <div class="diag-item" style="cursor:pointer;" title="${t('reset_stats_title')}" onclick="resetNodeStats(${node.id})">${t('lost')}: <b style="color: ${lossColor}">${lostCount} (${lossPercentStr}%)</b></div>
                     <div class="diag-item" style="cursor:pointer;" title="${t('reset_stats_title')}" onclick="resetNodeStats(${node.id})">Rbt: <b style="color: ${node.reboots > 0 ? '#fbbf24' : 'inherit'}">${node.reboots} ↻</b></div>
-                    <div class="diag-item">${t('duplicates')}: <b>${node.duplicate_packets || 0}</b></div>
                   </div>
                 </div>
               </div>`;
