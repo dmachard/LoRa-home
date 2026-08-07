@@ -297,6 +297,7 @@ void handleDisplayRefresh() {
 
 void initDisplay() {
   Wire.begin(I2C_SDA, I2C_SCL);
+  Wire.setClock(400000);
   if (display.begin(SSD1306_SWITCHCAPVCC, SCREEN_ADDRESS)) {
     oled_initialized = true;
     display.clearDisplay();

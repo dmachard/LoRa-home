@@ -1,3 +1,7 @@
+#include <freertos/FreeRTOS.h>
+#include <freertos/queue.h>
+#include <freertos/task.h>
+
 extern uint8_t gw_lora_chip;
 extern float gw_lora_freq;
 extern uint8_t gw_lora_sync;
@@ -5,8 +9,26 @@ extern uint8_t gw_lora_sf;
 extern float gw_lora_bw;
 extern uint8_t gw_lora_cr;
 PhysicalLayer* radio = nullptr;
-volatile bool rxFlag = false;
-void IRAM_ATTR onReceive() { rxFlag = true; }
+
+QueueHandle_t loraQueue = NULL;
+
+void IRAM_ATTR onReceive() {
+  uint8_t dummy = 1;
+  BaseType_t xHigherPriorityTaskWoken = pdFALSE;
+  xQueueSendFromISR(loraQueue, &dummy, &xHigherPriorityTaskWoken);
+  if (xHigherPriorityTaskWoken) {
+    portYIELD_FROM_ISR();
+  }
+}
+
+void loraTask(void *pvParameters) {
+  uint8_t dummy;
+  for (;;) {
+    if (xQueueReceive(loraQueue, &dummy, portMAX_DELAY) == pdTRUE) {
+      processLoRaPacket();
+    }
+  }
+}
 
 bool gcm_decrypt(const uint8_t *frame, uint8_t frame_len, uint8_t *payload,
                  uint8_t payload_size) {
@@ -34,7 +56,6 @@ bool gcm_decrypt(const uint8_t *frame, uint8_t frame_len, uint8_t *payload,
 }
 
 void processLoRaPacket() {
-  rxFlag = false;
   global_rx_interrupts++;
   uint8_t frame[128];
   int state = radio->readData(frame, sizeof(frame));
@@ -195,6 +216,11 @@ void initLoRa() {
   if (oled_initialized) {
     display.println("LoRa Radio: OK");
     display.display();
+  }
+
+  loraQueue = xQueueCreate(10, sizeof(uint8_t));
+  if (loraQueue != NULL) {
+    xTaskCreate(loraTask, "LoRaTask", 4096, NULL, 6, NULL);
   }
 
   radio->setPacketReceivedAction(onReceive);

@@ -203,10 +203,6 @@ void loop() {
   // Normal operational cycle
   esp_task_wdt_reset();      // Reset watchdog timer
 
-  if (rxFlag) {
-    processLoRaPacket();     // Decode and process received packet on interrupt
-  }
-
   server.handleClient();      // Handle incoming HTTP client requests
   handleButtonInteraction();  // Poll button to scroll display pages
   handleDisplayRefresh();     // Periodically refresh the OLED dashboard
