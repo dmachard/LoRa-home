@@ -916,9 +916,9 @@
 
                 <div id="node-diag-${node.id}" class="node-diag-drawer" style="display: ${isDiagOpen ? 'block' : 'none'};">
                   <div class="diag-grid">
-                    <div class="diag-item" title="${t('tooltip_rssi')}">RSSI: <b>${node.rssi} dBm</b> <span class="radio-badge rssi-${link.rssiBadgeClass}" title="Sensibilité théorique SF${gwSf}: ${link.sensitivityDbm} dBm">Marge: +${link.rssiMarginDb} dB · ${link.rssiMarginLabel}</span></div>
-                    <div class="diag-item" title="${t('tooltip_snr')}">SNR: <b>${node.snr !== undefined ? (node.snr >= 0 ? '+' : '') + node.snr.toFixed(1) : '--'} dB</b> <span class="radio-badge snr-${link.snrBadgeClass}" title="Seuil démod. SF${gwSf}: ${link.snrRequiredDb} dB">Marge: +${link.snrMarginDb} dB · ${link.snrMarginLabel}</span></div>
-                    <div class="diag-item" title="${t('tooltip_lqi')}">LQI: <b>${link.lqiPercent}%</b> <span class="radio-badge rssi-${link.badgeClass}">${link.qualityLabel} (${link.score})</span></div>
+                    <div class="diag-item" title="${t('tooltip_rssi')}">RSSI: <b>${node.rssi} dBm</b> <span class="radio-badge rssi-${link.rssiBadgeClass}">${link.rssiMarginLabel}</span></div>
+                    <div class="diag-item" title="${t('tooltip_snr')}">SNR: <b>${node.snr !== undefined ? (node.snr >= 0 ? '+' : '') + node.snr.toFixed(1) : '--'} dB</b> <span class="radio-badge snr-${link.snrBadgeClass}">${link.snrMarginLabel}</span></div>
+                    <div class="diag-item" title="${t('tooltip_lqi')}">LQI: <b>${link.lqiPercent}%</b> <span class="radio-badge rssi-${link.badgeClass}">${link.qualityLabel}</span></div>
                     <div class="diag-item">Uptime: <b>${nodeUptimeText}</b></div>
                     <div class="diag-item">${t('boot')}: <strong style="color: ${getResetReasonColor(node.last_reset_reason || 8)};">${getResetReasonLabel(node.last_reset_reason || 8)}</strong></div>
                     <div class="diag-item" style="cursor:pointer;" title="${t('reset_stats_title')}" onclick="resetNodeStats(${node.id})">${t('lost')}: <b style="color: ${lossColor}">${lostCount} (${lossPercentStr}%)</b></div>
