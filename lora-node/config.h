@@ -6,6 +6,9 @@
 // ==========================================
 #define WDT_TIMEOUT_S 30
 #define ENABLE_DEEP_SLEEP true  // Set to false to disable Deep Sleep for continuous serial log debugging
+#define LORA_DUPLICATE_ENABLED true
+#define LORA_DUPLICATE_MARGIN_MS 100
+#define LORA_DUPLICATE_JITTER_MS 200
 
 // ==========================================
 // HARDWARE BUTTON & LED CONFIGURATION

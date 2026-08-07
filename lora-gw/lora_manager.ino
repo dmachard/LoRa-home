@@ -131,6 +131,8 @@ void processLoRaPacket() {
       n.reboots++;
     } else if (seq == n.seq) {
       // Duplicate packet within the same boot session -> ignore
+      n.duplicate_packets++;
+      addGwLog("LoRa duplicate ignored node=%d seq=%lu", node_id, seq);
       radio->startReceive();
       return;
     } else if (seq > n.seq + 1) {

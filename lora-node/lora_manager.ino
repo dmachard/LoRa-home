@@ -141,10 +141,28 @@ void startLoRaMode() {
       prefs.begin("lora_cfg", false);
       prefs.putBool("force_config", true);
       prefs.end();
-      delay(1000);
-      ESP.restart();
     }
   }
+}
+
+int sendReliableLoRaPacket(const uint8_t* frame, uint8_t len) {
+  uint32_t toa_ms = 0;
+  if (radio != nullptr) {
+    toa_ms = (uint32_t)(radio->getTimeOnAir(len) / 1000);
+  }
+
+  Serial.printf("LoRa TX seq=%lu attempt=1 ToA=%lums\n", seq, toa_ms);
+  int state = radio->transmit(frame, len);
+
+  if (state == RADIOLIB_ERR_NONE && LORA_DUPLICATE_ENABLED) {
+    uint32_t jitter = (LORA_DUPLICATE_JITTER_MS > 0) ? random(0, LORA_DUPLICATE_JITTER_MS) : 0;
+    uint32_t delay_ms = toa_ms + LORA_DUPLICATE_MARGIN_MS + jitter;
+    Serial.printf("LoRa TX seq=%lu attempt=2 delay=%lums (jitter=%lums)\n", seq, delay_ms, jitter);
+    delay(delay_ms);
+    radio->transmit(frame, len);
+  }
+
+  return state;
 }
 
 void loopLoRa() {
@@ -311,7 +329,7 @@ void loopLoRa() {
 
   Serial.println("Starting radio transmit...");
   uint32_t tTxStart = millis();
-  int state = radio->transmit(frame, len);
+  int state = sendReliableLoRaPacket(frame, len);
   uint32_t tTxDur = millis() - tTxStart;
 
   if (state == RADIOLIB_ERR_NONE) {

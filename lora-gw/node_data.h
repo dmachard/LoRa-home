@@ -12,6 +12,7 @@ struct NodeData {
   uint32_t last_seen_ms;
   uint32_t packets_count;
   uint32_t packets_lost;
+  uint32_t duplicate_packets;
   uint32_t auth_failures;
   uint32_t reboots;
   float rssi;
