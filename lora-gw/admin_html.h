@@ -655,12 +655,14 @@ const file = otaFileInput.files[0];
 if (!file) return;
 const reader = new FileReader();
 reader.onload = async (e) => {
+let offset = 0;
+let totalSize = 0;
 try {
 const arrayBuffer = e.target.result;
 const bytes = new Uint8Array(arrayBuffer);
-const totalSize = bytes.length;
-const chunkSize = 480;
-let offset = 0;
+totalSize = bytes.length;
+const chunkSize = 240;
+offset = 0;
 while (offset < totalSize) {
 const size = Math.min(chunkSize, totalSize - offset);
 const chunk = bytes.slice(offset, offset + size);
@@ -673,12 +675,13 @@ otaStatusLabel.innerText = `Sent: ${Math.round(offset / 1024)} / ${Math.round(to
 }
 otaStatusLabel.innerText = "Finalizing and rebooting...";
 } catch (err) {
-if (offset >= totalSize) {
+if (totalSize > 0 && offset >= totalSize) {
 otaStatusLabel.innerText = "Update successful! Rebooting...";
 alert("OTA update successful! The node is rebooting.");
 resetOtaUi();
 } else {
-alert(`Transfer error: ${err.message}`);
+console.error("OTA Transfer Error:", err);
+alert(`Transfer error: ${err.message || err}`);
 resetOtaUi();
 }
 }

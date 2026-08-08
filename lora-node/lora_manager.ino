@@ -68,15 +68,8 @@ void startLoRaMode() {
     scd4x = new SensirionI2cScd4x();
     scd4x->begin(Wire, 0x62);
     scd4x->stopPeriodicMeasurement();
-    uint16_t error = scd4x->startPeriodicMeasurement();
-    if (!error) {
-      Serial.println("SCD41 sensor initialized successfully!");
-    } else {
-      Serial.println("SCD41 initialization failed!");
-      scd_detected = false;
-      delete scd4x;
-      scd4x = nullptr;
-    }
+    scd4x->powerDown();
+    Serial.println("SCD41 sensor initialized in Power Down mode!");
   }
 
   if (ina_detected) {
@@ -232,36 +225,45 @@ void loopLoRa() {
     }
   }
 
-  // 4. Read SCD41 (Photoacoustic CO2 NDIR sensor requires ~5s measurement window)
+  // 4. Read SCD41 (Single-Shot measurement mode for maximum battery life)
   if (scd_detected && scd4x != nullptr) {
-    bool isDataReady = false;
-    uint32_t startWait = millis();
-    while (millis() - startWait < 5000) {
-      esp_task_wdt_reset();
-      scd4x->getDataReadyStatus(isDataReady);
-      if (isDataReady) break;
-      delay(100);
-    }
+    scd4x->wakeUp();
+    delay(20);
+    uint16_t scd_err = scd4x->measureSingleShot();
+    if (!scd_err) {
+      bool isDataReady = false;
+      uint32_t startWait = millis();
+      while (millis() - startWait < 5000) {
+        esp_task_wdt_reset();
+        scd4x->getDataReadyStatus(isDataReady);
+        if (isDataReady) break;
+        delay(100);
+      }
 
-    if (isDataReady) {
-      uint16_t co2 = 0;
-      float temp = 0.0f;
-      float hum = 0.0f;
-      uint16_t error = scd4x->readMeasurement(co2, temp, hum);
-      if (!error && co2 > 0) {
-        addLog("SCD41: CO2=%dppm", co2);
-        Serial.printf("SCD41: CO2=%dppm | T=%.2f°C | H=%.2f%%\n", co2, temp, hum);
-        if (payload.count < 10) {
-          payload.readings[payload.count].type = TYPE_SCD40_CO2;
-          payload.readings[payload.count].value = (int32_t)co2;
-          payload.count++;
+      if (isDataReady) {
+        uint16_t co2 = 0;
+        float temp = 0.0f;
+        float hum = 0.0f;
+        uint16_t error = scd4x->readMeasurement(co2, temp, hum);
+        if (!error && co2 > 0) {
+          addLog("SCD41: CO2=%dppm", co2);
+          Serial.printf("SCD41: CO2=%dppm | T=%.2f°C | H=%.2f%%\n", co2, temp, hum);
+          if (payload.count < 10) {
+            payload.readings[payload.count].type = TYPE_SCD40_CO2;
+            payload.readings[payload.count].value = (int32_t)co2;
+            payload.count++;
+          }
+        } else {
+          Serial.println("SCD41 read failed");
         }
       } else {
-        Serial.println("SCD41 read failed");
+        Serial.println("SCD41 measurement not ready after 5s wait");
       }
     } else {
-      Serial.println("SCD41 measurement not ready after 5s wait");
+      Serial.printf("SCD41 measureSingleShot failed: 0x%04X\n", scd_err);
     }
+    // Put SCD41 back to sleep immediately to save power (~3uA)
+    scd4x->powerDown();
   }
 
   // 5. Read INA226 (Voltage, Current, Power)
@@ -343,6 +345,14 @@ void loopLoRa() {
     current_error_code = ERR_TX_FAILED;
   }
 
+  // Put sensors to low-power sleep mode before ESP32 Deep Sleep
+  if (bmp_detected && bmp != nullptr) {
+    bmp->setSampling(Adafruit_BMP280::MODE_SLEEP);
+  }
+  if (ina_detected && ina != nullptr) {
+    ina->shutDown();
+  }
+
   // 6. Put LoRa radio transceiver into deep sleep mode
   if (radio != nullptr) {
     radio->sleep();
@@ -358,15 +368,23 @@ void loopLoRa() {
     // Configure timer wakeup (in microseconds)
     esp_sleep_enable_timer_wakeup((uint64_t)sleepSec * 1000000ULL);
 
-    // Turn OFF blue LED (LORA_DIO1) and hold its HIGH state during Deep Sleep
-    if (LORA_DIO1 >= 0) {
-      pinMode(LORA_DIO1, OUTPUT);
-      digitalWrite(LORA_DIO1, HIGH);
-      gpio_hold_en((gpio_num_t)LORA_DIO1);
-      gpio_deep_sleep_hold_en();
+    // Keep LORA_CS HIGH to lock SX1262/SX1278 SPI slave in deep sleep mode
+    if (LORA_CS >= 0) {
+      pinMode(LORA_CS, OUTPUT);
+      digitalWrite(LORA_CS, HIGH);
+      gpio_hold_en((gpio_num_t)LORA_CS);
     }
 
-    // Start deep sleep (power consumption drops to ~5-10uA!)
+    // Turn OFF status LED and hold its HIGH state during Deep Sleep
+    if (LED_PIN >= 0) {
+      pinMode(LED_PIN, OUTPUT);
+      digitalWrite(LED_PIN, HIGH);
+      gpio_hold_en((gpio_num_t)LED_PIN);
+    }
+
+    gpio_deep_sleep_hold_en();
+
+    // Start deep sleep (power consumption drops to ~15-20uA!)
     esp_deep_sleep_start();
   } else {
     Serial.printf("Deep Sleep disabled in config.h. Delaying %u seconds (USB Serial remains connected)...\n", sleepSec);
