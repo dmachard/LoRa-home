@@ -188,6 +188,7 @@ void loopLoRa() {
 
   // 2. Read BMP280
   if (bmp_detected && bmp != nullptr) {
+    bmp->setSampling(Adafruit_BMP280::MODE_NORMAL);
     float t = bmp->readTemperature();
     float p = bmp->readPressure();
     addLog("BMP280: P=%.1fhPa", p / 100.0f);
@@ -268,6 +269,8 @@ void loopLoRa() {
 
   // 5. Read INA226 (Voltage, Current, Power)
   if (ina_detected && ina != nullptr) {
+    ina->setModeShuntBusContinuous();
+    delay(10);
     float v = ina->getBusVoltage(); // Voltage in Volts
     float sv = ina->getShuntVoltage_mV(); // Shunt voltage in mV
     float c = sv / 0.1f; // Direct calculation: I (mA) = V_shunt (mV) / R_shunt (0.1 Ohm)

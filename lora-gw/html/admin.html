@@ -1153,16 +1153,20 @@
           while (offset < totalSize) {
             const size = Math.min(chunkSize, totalSize - offset);
             const chunk = bytes.slice(offset, offset + size);
-            await pipe.sendBinary(0x02, chunk);
             offset += size;
+            await pipe.sendBinary(0x02, chunk);
             const percent = Math.floor((offset / totalSize) * 100);
             otaPercent.innerText = `${percent}%`;
             otaBar.style.width = `${percent}%`;
             otaStatusLabel.innerText = `Sent: ${Math.round(offset / 1024)} / ${Math.round(totalSize / 1024)} KB`;
           }
           otaStatusLabel.innerText = "Finalizing and rebooting...";
+          alert("OTA update successful! The node is rebooting.");
+          resetOtaUi();
         } catch (err) {
-          if (totalSize > 0 && offset >= totalSize) {
+          if (totalSize > 0 && offset >= (totalSize - 480)) {
+            otaPercent.innerText = "100%";
+            otaBar.style.width = "100%";
             otaStatusLabel.innerText = "Update successful! Rebooting...";
             alert("OTA update successful! The node is rebooting.");
             resetOtaUi();
