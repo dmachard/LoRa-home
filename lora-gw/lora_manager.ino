@@ -12,10 +12,21 @@ PhysicalLayer* radio = nullptr;
 
 QueueHandle_t loraQueue = NULL;
 
+extern uint32_t global_rx_interrupts;
+extern uint32_t global_queue_overflows;
+extern uint32_t global_radio_reads;
+extern uint32_t global_radio_errors;
+extern uint32_t global_valid_packets;
+extern uint32_t global_rx_processing_us;
+extern uint32_t global_total_processing_us;
+
 void IRAM_ATTR onReceive() {
+  global_rx_interrupts++;
   uint8_t dummy = 1;
   BaseType_t xHigherPriorityTaskWoken = pdFALSE;
-  xQueueSendFromISR(loraQueue, &dummy, &xHigherPriorityTaskWoken);
+  if (xQueueSendFromISR(loraQueue, &dummy, &xHigherPriorityTaskWoken) != pdTRUE) {
+    global_queue_overflows++;
+  }
   if (xHigherPriorityTaskWoken) {
     portYIELD_FROM_ISR();
   }
@@ -56,24 +67,33 @@ bool gcm_decrypt(const uint8_t *frame, uint8_t frame_len, uint8_t *payload,
 }
 
 void processLoRaPacket() {
-  global_rx_interrupts++;
+  uint32_t start_us = micros();
+  global_radio_reads++;
+
   uint8_t frame[128];
   int state = radio->readData(frame, sizeof(frame));
   int len = radio->getPacketLength();
+  float rssi = radio->getRSSI();
+  float snr = radio->getSNR();
+
+  // PRIORITÉ ABSOLUE : Relancer le mode RX immédiatement après la lecture SPI
+  // afin que la puce radio continue d'écouter les transmissions LoRa.
+  radio->startReceive();
+  uint32_t rx_start_us = micros();
+  global_rx_processing_us = rx_start_us - start_us;
 
   if (state != RADIOLIB_ERR_NONE) {
+    global_radio_errors++;
     global_malformed_packets++;
-    float rssi = radio->getRSSI();
-    float snr = radio->getSNR();
     addGwLog("Radio RX error (code: %d | RSSI: %.0fdBm | SNR: %.1fdB)", state, rssi, snr);
-    radio->startReceive();
+    global_total_processing_us = micros() - start_us;
     return;
   }
 
   if (len < HDR_SIZE + TAG_SIZE) {
     global_malformed_packets++;
     addGwLog("Packet too short: %d bytes", len);
-    radio->startReceive();
+    global_total_processing_us = micros() - start_us;
     return;
   }
 
@@ -81,7 +101,7 @@ void processLoRaPacket() {
   if (node_id >= MAX_NODES) {
     global_unknown_nodes++;
     addGwLog("Node %d | UNKNOWN NODE ID", node_id);
-    radio->startReceive();
+    global_total_processing_us = micros() - start_us;
     return;
   }
 
@@ -91,7 +111,7 @@ void processLoRaPacket() {
   if (payload_len > sizeof(payload)) {
     global_malformed_packets++;
     addGwLog("Node %d | Packet too large (%d bytes)", node_id, len);
-    radio->startReceive();
+    global_total_processing_us = micros() - start_us;
     return;
   }
 
@@ -99,9 +119,12 @@ void processLoRaPacket() {
   if (!gcm_decrypt(frame, len, payload, sizeof(payload))) {
     n.auth_failures++;
     addGwLog("Node %d | AUTH FAILED (AES key mismatch)", node_id);
-    radio->startReceive();
+    global_total_processing_us = micros() - start_us;
     return;
   }
+
+  global_valid_packets++;
+
 
   uint32_t seq = ((uint32_t)frame[1] << 24) | ((uint32_t)frame[2] << 16) |
                  ((uint32_t)frame[3] << 8) | ((uint32_t)frame[4]);
@@ -133,7 +156,7 @@ void processLoRaPacket() {
       // Duplicate packet within the same boot session -> ignore
       n.duplicate_packets++;
       addGwLog("LoRa duplicate ignored node=%d seq=%lu", node_id, seq);
-      radio->startReceive();
+      global_total_processing_us = micros() - start_us;
       return;
     } else if (seq > n.seq + 1) {
       uint32_t lost = seq - (n.seq + 1);
@@ -145,8 +168,8 @@ void processLoRaPacket() {
   n.seen = true;
   n.seq = seq;
   n.last_random_id = random_id;
-  n.rssi = radio->getRSSI();
-  n.snr = radio->getSNR();
+  n.rssi = rssi;
+  n.snr = snr;
   n.last_seen_ms = millis();
   n.packets_count++;
   n.last_reset_reason = current_reset_reason;
@@ -167,9 +190,14 @@ void processLoRaPacket() {
   }
 
   last_active_node_id = node_id;
+  global_total_processing_us = micros() - start_us;
+
+  Serial.printf("LoRa RX Timing | prep to RX: %lu us | total processing: %lu us\n",
+                global_rx_processing_us, global_total_processing_us);
+
   updateDisplay();
-  radio->startReceive();
 }
+
 
 void initLoRa() {
   if (oled_initialized) {

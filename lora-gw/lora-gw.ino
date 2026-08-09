@@ -76,6 +76,13 @@ GCM<AES128> gcm;
 uint32_t global_malformed_packets = 0;
 uint32_t global_unknown_nodes = 0;
 uint32_t global_rx_interrupts = 0;
+uint32_t global_queue_overflows = 0;
+uint32_t global_radio_reads = 0;
+uint32_t global_radio_errors = 0;
+uint32_t global_valid_packets = 0;
+uint32_t global_rx_processing_us = 0;
+uint32_t global_total_processing_us = 0;
+
 
 GwLogEntry gwLogBuffer[20];
 uint8_t gwLogHead = 0;

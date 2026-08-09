@@ -113,6 +113,33 @@ void handleMetrics() {
   snprintf(global_line, sizeof(global_line),
            "lora_global_unknown_nodes_total %lu\n", global_unknown_nodes);
   out += global_line;
+  extern uint32_t global_queue_overflows;
+  extern uint32_t global_radio_reads;
+  extern uint32_t global_radio_errors;
+  extern uint32_t global_valid_packets;
+  extern uint32_t global_rx_processing_us;
+  extern uint32_t global_total_processing_us;
+  snprintf(global_line, sizeof(global_line),
+           "lora_global_rx_interrupts_total %lu\n", global_rx_interrupts);
+  out += global_line;
+  snprintf(global_line, sizeof(global_line),
+           "lora_global_queue_overflows_total %lu\n", global_queue_overflows);
+  out += global_line;
+  snprintf(global_line, sizeof(global_line),
+           "lora_global_radio_reads_total %lu\n", global_radio_reads);
+  out += global_line;
+  snprintf(global_line, sizeof(global_line),
+           "lora_global_radio_errors_total %lu\n", global_radio_errors);
+  out += global_line;
+  snprintf(global_line, sizeof(global_line),
+           "lora_global_valid_packets_total %lu\n", global_valid_packets);
+  out += global_line;
+  snprintf(global_line, sizeof(global_line),
+           "lora_global_rx_prep_microseconds %lu\n", global_rx_processing_us);
+  out += global_line;
+  snprintf(global_line, sizeof(global_line),
+           "lora_global_rx_total_microseconds %lu\n", global_total_processing_us);
+  out += global_line;
 
   server.send(200, "text/plain; version=0.0.4; charset=utf-8", out);
 }
@@ -165,10 +192,22 @@ void handleNodesJson() {
   extern uint8_t gw_lora_sf;
   extern float gw_lora_bw;
   extern uint8_t gw_lora_cr;
+  extern uint32_t global_queue_overflows;
+  extern uint32_t global_radio_reads;
+  extern uint32_t global_radio_errors;
+  extern uint32_t global_valid_packets;
+  extern uint32_t global_rx_processing_us;
+  extern uint32_t global_total_processing_us;
   JsonObject gw = doc["gateway"].to<JsonObject>();
   gw["uptime_sec"]        = millis() / 1000;
   gw["free_heap_kb"]      = ESP.getFreeHeap() / 1024;
   gw["rx_interrupts"]     = global_rx_interrupts;
+  gw["queue_overflows"]   = global_queue_overflows;
+  gw["radio_reads"]       = global_radio_reads;
+  gw["radio_errors"]      = global_radio_errors;
+  gw["valid_packets"]     = global_valid_packets;
+  gw["rx_prep_us"]        = global_rx_processing_us;
+  gw["rx_total_us"]       = global_total_processing_us;
   gw["malformed_packets"] = global_malformed_packets;
   gw["unknown_nodes"]     = global_unknown_nodes;
   gw["wifi_rssi"]         = WiFi.RSSI();
@@ -178,6 +217,7 @@ void handleNodesJson() {
   gw["lora_cr"]           = gw_lora_cr;
 
   extern uint8_t gwLogHead;
+
   extern uint8_t gwLogCount;
   extern GwLogEntry gwLogBuffer[20];
 
