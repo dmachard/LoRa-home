@@ -16,6 +16,10 @@ extern uint32_t global_rx_interrupts;
 extern uint32_t global_queue_overflows;
 extern uint32_t global_radio_reads;
 extern uint32_t global_radio_errors;
+extern uint32_t global_radio_err_crc;
+extern uint32_t global_radio_err_header;
+extern uint32_t global_radio_err_timeout;
+extern uint32_t global_radio_err_other;
 extern uint32_t global_valid_packets;
 extern uint32_t global_rx_processing_us;
 extern uint32_t global_total_processing_us;
@@ -89,6 +93,15 @@ void processLoRaPacket() {
 
   if (state != RADIOLIB_ERR_NONE) {
     global_radio_errors++;
+    if (state == RADIOLIB_ERR_CRC_MISMATCH) {
+      global_radio_err_crc++;
+    } else if (state == RADIOLIB_ERR_LORA_HEADER_DAMAGED) {
+      global_radio_err_header++;
+    } else if (state == RADIOLIB_ERR_RX_TIMEOUT) {
+      global_radio_err_timeout++;
+    } else {
+      global_radio_err_other++;
+    }
     addGwLog("Radio RX error (code: %d | RSSI: %.0fdBm | SNR: %.1fdB)", state, rssi, snr);
     global_total_processing_us = micros() - t0;
     return;

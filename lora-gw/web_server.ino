@@ -40,6 +40,8 @@ void handleMetrics() {
   out += "# TYPE lora_global_radio_reads_total counter\n";
   out += "# HELP lora_global_radio_errors_total Total radio read errors\n";
   out += "# TYPE lora_global_radio_errors_total counter\n";
+  out += "# HELP lora_global_radio_error_code_total Radio read errors by RadioLib code\n";
+  out += "# TYPE lora_global_radio_error_code_total counter\n";
   out += "# HELP lora_global_valid_packets_total Total valid packets received\n";
   out += "# TYPE lora_global_valid_packets_total counter\n";
   out += "# HELP lora_global_rx_prep_microseconds Microseconds to release radio back to RX mode\n";
@@ -127,6 +129,10 @@ void handleMetrics() {
   extern uint32_t global_queue_overflows;
   extern uint32_t global_radio_reads;
   extern uint32_t global_radio_errors;
+  extern uint32_t global_radio_err_crc;
+  extern uint32_t global_radio_err_header;
+  extern uint32_t global_radio_err_timeout;
+  extern uint32_t global_radio_err_other;
   extern uint32_t global_valid_packets;
   extern uint32_t global_rx_processing_us;
   extern uint32_t global_total_processing_us;
@@ -141,6 +147,18 @@ void handleMetrics() {
   out += global_line;
   snprintf(global_line, sizeof(global_line),
            "lora_global_radio_errors_total %lu\n", global_radio_errors);
+  out += global_line;
+  snprintf(global_line, sizeof(global_line),
+           "lora_global_radio_error_code_total{code=\"-2\",description=\"CRC_MISMATCH\"} %lu\n", global_radio_err_crc);
+  out += global_line;
+  snprintf(global_line, sizeof(global_line),
+           "lora_global_radio_error_code_total{code=\"-3\",description=\"HEADER_DAMAGE\"} %lu\n", global_radio_err_header);
+  out += global_line;
+  snprintf(global_line, sizeof(global_line),
+           "lora_global_radio_error_code_total{code=\"-4\",description=\"RX_TIMEOUT\"} %lu\n", global_radio_err_timeout);
+  out += global_line;
+  snprintf(global_line, sizeof(global_line),
+           "lora_global_radio_error_code_total{code=\"other\",description=\"OTHER_ERRORS\"} %lu\n", global_radio_err_other);
   out += global_line;
   snprintf(global_line, sizeof(global_line),
            "lora_global_valid_packets_total %lu\n", global_valid_packets);
@@ -205,10 +223,10 @@ void handleNodesJson() {
   extern uint8_t gw_lora_cr;
   extern uint32_t global_queue_overflows;
   extern uint32_t global_radio_reads;
-  extern uint32_t global_radio_errors;
-  extern uint32_t global_valid_packets;
-  extern uint32_t global_rx_processing_us;
-  extern uint32_t global_total_processing_us;
+  extern uint32_t global_radio_err_crc;
+  extern uint32_t global_radio_err_header;
+  extern uint32_t global_radio_err_timeout;
+  extern uint32_t global_radio_err_other;
   JsonObject gw = doc["gateway"].to<JsonObject>();
   gw["uptime_sec"]        = millis() / 1000;
   gw["free_heap_kb"]      = ESP.getFreeHeap() / 1024;
@@ -216,6 +234,10 @@ void handleNodesJson() {
   gw["queue_overflows"]   = global_queue_overflows;
   gw["radio_reads"]       = global_radio_reads;
   gw["radio_errors"]      = global_radio_errors;
+  gw["radio_err_crc"]     = global_radio_err_crc;
+  gw["radio_err_header"]  = global_radio_err_header;
+  gw["radio_err_timeout"] = global_radio_err_timeout;
+  gw["radio_err_other"]   = global_radio_err_other;
   gw["valid_packets"]     = global_valid_packets;
   gw["rx_prep_us"]        = global_rx_processing_us;
   gw["rx_total_us"]       = global_total_processing_us;

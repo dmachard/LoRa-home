@@ -44,7 +44,10 @@
           <button class="legend-close" onclick="toggleErrorsPanel()">✕</button>
         </div>
       </div>
-      <div id="errors-terminal" style="background: #090d16; border: 1px solid rgba(255,255,255,0.08); border-radius: 8px; padding: 12px; font-family: monospace; font-size: 12px; max-height: 200px; overflow-y: auto; color: #f87171; white-space: pre-wrap; margin-top: 10px;">
+      <div id="errors-stats-summary" style="background: rgba(248, 113, 113, 0.08); border: 1px solid rgba(248, 113, 113, 0.2); border-radius: 6px; padding: 8px 12px; margin-top: 10px; font-size: 12px; color: #fca5a5; font-family: monospace;">
+        Radio Errors: <b>0</b> &nbsp;|&nbsp; Malformés: <b>0</b> &nbsp;|&nbsp; Nœuds Inconnus: <b>0</b>
+      </div>
+      <div id="errors-terminal" style="background: #090d16; border: 1px solid rgba(255,255,255,0.08); border-radius: 8px; padding: 12px; font-family: monospace; font-size: 12px; max-height: 200px; overflow-y: auto; color: #f87171; white-space: pre-wrap; margin-top: 8px;">
         <span style="color: #64748b;" data-i18n="no_errors_logged">Aucune erreur radio détectée.</span>
       </div>
     </div>
@@ -621,6 +624,41 @@
           }
         }
 
+        if (data.gateway) {
+          const radioErr = data.gateway.radio_errors || 0;
+          const malformedErr = data.gateway.malformed_packets || 0;
+          const unknownNodesErr = data.gateway.unknown_nodes || 0;
+          const totalErrCount = radioErr + malformedErr + unknownNodesErr;
+
+          const badgeEl = document.getElementById('errors-count-badge');
+          if (badgeEl) {
+            badgeEl.innerText = totalErrCount;
+            if (totalErrCount > 0) {
+              badgeEl.classList.add('has-errors');
+            } else {
+              badgeEl.classList.remove('has-errors');
+            }
+          }
+
+          const errCrc = data.gateway.radio_err_crc || 0;
+          const errHeader = data.gateway.radio_err_header || 0;
+          const errTimeout = data.gateway.radio_err_timeout || 0;
+          const errOther = data.gateway.radio_err_other || 0;
+
+          const statsSummaryEl = document.getElementById('errors-stats-summary');
+          if (statsSummaryEl) {
+            let breakdown = [];
+            if (errCrc > 0) breakdown.push(`CRC (-2): <b>${errCrc}</b>`);
+            if (errHeader > 0) breakdown.push(`Header (-3): <b>${errHeader}</b>`);
+            if (errTimeout > 0) breakdown.push(`Timeout (-4): <b>${errTimeout}</b>`);
+            if (errOther > 0) breakdown.push(`Autres: <b>${errOther}</b>`);
+            
+            const detailStr = breakdown.length > 0 ? ` (${breakdown.join(', ')})` : '';
+
+            statsSummaryEl.innerHTML = `Radio Errors: <b>${radioErr}</b>${detailStr} &nbsp;|&nbsp; Malformés: <b>${malformedErr}</b> &nbsp;|&nbsp; Nœuds Inconnus: <b>${unknownNodesErr}</b>`;
+          }
+        }
+
         if (data.logs && Array.isArray(data.logs)) {
           const errorLogs = data.logs.filter(l => {
             if (!l.msg) return false;
@@ -634,16 +672,6 @@
                    msg.includes('invalid') ||
                    msg.includes('drop');
           });
-
-          const badgeEl = document.getElementById('errors-count-badge');
-          if (badgeEl) {
-            badgeEl.innerText = errorLogs.length;
-            if (errorLogs.length > 0) {
-              badgeEl.classList.add('has-errors');
-            } else {
-              badgeEl.classList.remove('has-errors');
-            }
-          }
 
           const errTerm = document.getElementById('errors-terminal');
           if (errTerm) {
