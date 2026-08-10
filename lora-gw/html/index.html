@@ -45,7 +45,7 @@
         </div>
       </div>
       <div id="errors-stats-summary" style="background: rgba(248, 113, 113, 0.08); border: 1px solid rgba(248, 113, 113, 0.2); border-radius: 6px; padding: 8px 12px; margin-top: 10px; font-size: 12px; color: #fca5a5; font-family: monospace;">
-        Radio Errors: <b>0</b> &nbsp;|&nbsp; Malformés: <b>0</b> &nbsp;|&nbsp; Nœuds Inconnus: <b>0</b>
+        Radio Errors: <b>0</b> &nbsp;|&nbsp; Malformés: <b>0</b> &nbsp;|&nbsp; Nœuds Inconnus: <b>0</b> &nbsp;|&nbsp; <span data-i18n="err_lost_seq">Paquets Perdus (Seq)</span>: <b>0</b>
       </div>
       <div id="errors-terminal" style="background: #090d16; border: 1px solid rgba(255,255,255,0.08); border-radius: 8px; padding: 12px; font-family: monospace; font-size: 12px; max-height: 200px; overflow-y: auto; color: #f87171; white-space: pre-wrap; margin-top: 8px;">
         <span style="color: #64748b;" data-i18n="no_errors_logged">Aucune erreur radio détectée.</span>
@@ -187,7 +187,8 @@
         tooltip_rssi: "RSSI: Power in dBm compared to theoretical receiver sensitivity",
         tooltip_snr: "SNR: Signal clarity compared to minimum SF demodulation threshold",
         tooltip_lqi: "LQI: Composite Link Quality Score based on RSSI & SNR margins",
-        duplicates: "Duplicates"
+        duplicates: "Duplicates",
+        err_lost_seq: "Lost Packets (Seq)"
       },
       fr: {
         gw_title: "LoRa@Home",
@@ -271,7 +272,8 @@
         tooltip_rssi: "RSSI: Puissance en dBm comparée à la sensibilité théorique du récepteur",
         tooltip_snr: "SNR: Clarté en dB comparée au seuil minimal de démodulation du SF",
         tooltip_lqi: "LQI: Score de Qualité du Lien calculé à partir des marges RSSI et SNR",
-        duplicates: "Doublons"
+        duplicates: "Doublons",
+        err_lost_seq: "Paquets Perdus (Seq)"
       }
     };
 
@@ -628,7 +630,8 @@
           const radioErr = data.gateway.radio_errors || 0;
           const malformedErr = data.gateway.malformed_packets || 0;
           const unknownNodesErr = data.gateway.unknown_nodes || 0;
-          const totalErrCount = radioErr + malformedErr + unknownNodesErr;
+          const totalLostPackets = data.nodes ? data.nodes.reduce((acc, n) => acc + (n.packets_lost || 0), 0) : 0;
+          const totalErrCount = radioErr + malformedErr + unknownNodesErr + totalLostPackets;
 
           const badgeEl = document.getElementById('errors-count-badge');
           if (badgeEl) {
@@ -655,7 +658,7 @@
             
             const detailStr = breakdown.length > 0 ? ` (${breakdown.join(', ')})` : '';
 
-            statsSummaryEl.innerHTML = `Radio Errors: <b>${radioErr}</b>${detailStr} &nbsp;|&nbsp; Malformés: <b>${malformedErr}</b> &nbsp;|&nbsp; Nœuds Inconnus: <b>${unknownNodesErr}</b>`;
+            statsSummaryEl.innerHTML = `Radio Errors: <b>${radioErr}</b>${detailStr} &nbsp;|&nbsp; Malformés: <b>${malformedErr}</b> &nbsp;|&nbsp; Nœuds Inconnus: <b>${unknownNodesErr}</b> &nbsp;|&nbsp; ${t('err_lost_seq')}: <b>${totalLostPackets}</b>`;
           }
         }
 
@@ -670,7 +673,9 @@
                    msg.includes('short') ||
                    msg.includes('corrupt') ||
                    msg.includes('invalid') ||
-                   msg.includes('drop');
+                   msg.includes('drop') ||
+                   msg.includes('packet loss') ||
+                   msg.includes('lost');
           });
 
           const errTerm = document.getElementById('errors-terminal');

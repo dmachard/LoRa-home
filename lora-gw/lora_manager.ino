@@ -179,6 +179,7 @@ void processLoRaPacket() {
       uint32_t lost = seq - (n.seq + 1);
       n.packets_lost += lost;
       Serial.printf("Node %d | PACKET LOSS DETECTED: %lu packet(s) lost (seq %lu -> %lu)\n", node_id, lost, n.seq, seq);
+      addGwLog("Node %d | PACKET LOSS: %lu packet(s) lost (seq %lu -> %lu)", node_id, lost, n.seq, seq);
     }
   }
 
