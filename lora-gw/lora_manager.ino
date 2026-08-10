@@ -67,33 +67,37 @@ bool gcm_decrypt(const uint8_t *frame, uint8_t frame_len, uint8_t *payload,
 }
 
 void processLoRaPacket() {
-  uint32_t start_us = micros();
+  uint32_t t0 = micros();
   global_radio_reads++;
 
   uint8_t frame[128];
   int state = radio->readData(frame, sizeof(frame));
-  int len = radio->getPacketLength();
-  float rssi = radio->getRSSI();
-  float snr = radio->getSNR();
+  uint32_t t1 = micros();
 
-  // PRIORITÉ ABSOLUE : Relancer le mode RX immédiatement après la lecture SPI
-  // afin que la puce radio continue d'écouter les transmissions LoRa.
+  int len = radio->getPacketLength();
+  uint32_t t2 = micros();
+
+  float rssi = radio->getRSSI();
+  uint32_t t3 = micros();
+
+  float snr = radio->getSNR();
+  uint32_t t4 = micros();
+
   radio->startReceive();
-  uint32_t rx_start_us = micros();
-  global_rx_processing_us = rx_start_us - start_us;
+  uint32_t t5 = micros();
+  global_rx_processing_us = t5 - t0;
 
   if (state != RADIOLIB_ERR_NONE) {
     global_radio_errors++;
-    global_malformed_packets++;
     addGwLog("Radio RX error (code: %d | RSSI: %.0fdBm | SNR: %.1fdB)", state, rssi, snr);
-    global_total_processing_us = micros() - start_us;
+    global_total_processing_us = micros() - t0;
     return;
   }
 
   if (len < HDR_SIZE + TAG_SIZE) {
     global_malformed_packets++;
     addGwLog("Packet too short: %d bytes", len);
-    global_total_processing_us = micros() - start_us;
+    global_total_processing_us = micros() - t0;
     return;
   }
 
@@ -101,7 +105,7 @@ void processLoRaPacket() {
   if (node_id >= MAX_NODES) {
     global_unknown_nodes++;
     addGwLog("Node %d | UNKNOWN NODE ID", node_id);
-    global_total_processing_us = micros() - start_us;
+    global_total_processing_us = micros() - t0;
     return;
   }
 
@@ -111,7 +115,7 @@ void processLoRaPacket() {
   if (payload_len > sizeof(payload)) {
     global_malformed_packets++;
     addGwLog("Node %d | Packet too large (%d bytes)", node_id, len);
-    global_total_processing_us = micros() - start_us;
+    global_total_processing_us = micros() - t0;
     return;
   }
 
@@ -119,7 +123,7 @@ void processLoRaPacket() {
   if (!gcm_decrypt(frame, len, payload, sizeof(payload))) {
     n.auth_failures++;
     addGwLog("Node %d | AUTH FAILED (AES key mismatch)", node_id);
-    global_total_processing_us = micros() - start_us;
+    global_total_processing_us = micros() - t0;
     return;
   }
 
@@ -156,7 +160,7 @@ void processLoRaPacket() {
       // Duplicate packet within the same boot session -> ignore
       n.duplicate_packets++;
       addGwLog("LoRa duplicate ignored node=%d seq=%lu", node_id, seq);
-      global_total_processing_us = micros() - start_us;
+      global_total_processing_us = micros() - t0;
       return;
     } else if (seq > n.seq + 1) {
       uint32_t lost = seq - (n.seq + 1);
@@ -190,10 +194,10 @@ void processLoRaPacket() {
   }
 
   last_active_node_id = node_id;
-  global_total_processing_us = micros() - start_us;
+  global_total_processing_us = micros() - t0;
 
-  Serial.printf("LoRa RX Timing | prep to RX: %lu us | total processing: %lu us\n",
-                global_rx_processing_us, global_total_processing_us);
+  Serial.printf("LoRa RX Breakdown | readData: %lu us | getPacketLength: %lu us | getRSSI: %lu us | getSNR: %lu us | startReceive: %lu us | prep to RX: %lu us | total: %lu us\n",
+                t1 - t0, t2 - t1, t3 - t2, t4 - t3, t5 - t4, global_rx_processing_us, global_total_processing_us);
 
   updateDisplay();
 }

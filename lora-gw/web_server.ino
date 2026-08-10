@@ -32,9 +32,20 @@ void handleMetrics() {
   out += "# HELP lora_global_unknown_nodes_total Total packets from unknown "
          "node IDs\n";
   out += "# TYPE lora_global_unknown_nodes_total counter\n";
-  out += "# HELP lora_global_rx_interrupts_total Total radio interrupts "
-         "received\n";
+  out += "# HELP lora_global_rx_interrupts_total Total radio interrupts received\n";
   out += "# TYPE lora_global_rx_interrupts_total counter\n";
+  out += "# HELP lora_global_queue_overflows_total Total queue overflows\n";
+  out += "# TYPE lora_global_queue_overflows_total counter\n";
+  out += "# HELP lora_global_radio_reads_total Total radio read attempts\n";
+  out += "# TYPE lora_global_radio_reads_total counter\n";
+  out += "# HELP lora_global_radio_errors_total Total radio read errors\n";
+  out += "# TYPE lora_global_radio_errors_total counter\n";
+  out += "# HELP lora_global_valid_packets_total Total valid packets received\n";
+  out += "# TYPE lora_global_valid_packets_total counter\n";
+  out += "# HELP lora_global_rx_prep_microseconds Microseconds to release radio back to RX mode\n";
+  out += "# TYPE lora_global_rx_prep_microseconds gauge\n";
+  out += "# HELP lora_global_rx_total_microseconds Total packet processing time in microseconds\n";
+  out += "# TYPE lora_global_rx_total_microseconds gauge\n";
   out += "# HELP lora_gateway_uptime_seconds Gateway uptime in seconds\n";
   out += "# TYPE lora_gateway_uptime_seconds gauge\n";
   out +=
