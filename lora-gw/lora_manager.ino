@@ -198,8 +198,6 @@ void processLoRaPacket() {
 
   Serial.printf("LoRa RX Breakdown | readData: %lu us | getPacketLength: %lu us | getRSSI: %lu us | getSNR: %lu us | startReceive: %lu us | prep to RX: %lu us | total: %lu us\n",
                 t1 - t0, t2 - t1, t3 - t2, t4 - t3, t5 - t4, global_rx_processing_us, global_total_processing_us);
-
-  updateDisplay();
 }
 
 
