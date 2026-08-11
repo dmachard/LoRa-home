@@ -3,6 +3,20 @@
 
 #include <Arduino.h>
 
+#define TAG_SIZE 8
+#define HDR_SIZE 9 // Exact 9-byte header: node_id (1B) + seq (4B) + msg_type (1B) + entropy (3B)
+
+enum MessageType {
+  MSG_TYPE_DATA = 0x01,
+  MSG_TYPE_ACK  = 0x02
+};
+
+struct AckPayload {
+  uint8_t  node_id;     // Destination Node ID
+  uint32_t seq;         // Confirmed sequence number
+  uint8_t  status;      // Status (0 = OK)
+} __attribute__((packed));
+
 enum ReadingType {
   TYPE_AHT20_TEMP  = 3,
   TYPE_AHT20_HUM   = 4,

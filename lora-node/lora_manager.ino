@@ -1,7 +1,4 @@
 // LoRa transmission structures and constants
-#define HDR_SIZE 9
-#define TAG_SIZE 8
-
 #include "shared_protocol.h"
 
 void startLoRaMode() {
@@ -138,24 +135,79 @@ void startLoRaMode() {
   }
 }
 
-int sendReliableLoRaPacket(const uint8_t* frame, uint8_t len) {
-  uint32_t toa_ms = 0;
-  if (radio != nullptr) {
-    toa_ms = (uint32_t)(radio->getTimeOnAir(len) / 1000);
+bool gcm_decrypt(const uint8_t *frame, uint8_t frame_len, uint8_t *payload, uint8_t payload_size) {
+  if (frame_len < HDR_SIZE + TAG_SIZE) return false;
+  uint8_t payload_len = frame_len - HDR_SIZE - TAG_SIZE;
+  if (payload_len > payload_size) return false;
+
+  uint8_t iv[12] = {0};
+  memcpy(iv, frame, 9);
+
+  const uint8_t *ciphertext = frame + HDR_SIZE;
+  const uint8_t *tag = frame + frame_len - TAG_SIZE;
+
+  GCM<AES128> local_gcm;
+  local_gcm.setKey(config.aes_key, 16);
+  local_gcm.setIV(iv, 12);
+  local_gcm.addAuthData(frame, HDR_SIZE);
+  local_gcm.decrypt(payload, ciphertext, payload_len);
+
+  uint8_t computed_tag[TAG_SIZE];
+  local_gcm.computeTag(computed_tag, TAG_SIZE);
+  return memcmp(computed_tag, tag, TAG_SIZE) == 0;
+}
+
+bool sendDataAndWaitForAck(const uint8_t* frame, uint8_t len, uint32_t current_seq) {
+  uint8_t ack_total_len = HDR_SIZE + sizeof(AckPayload) + TAG_SIZE;
+  uint32_t ack_toa_ms = (uint32_t)(radio->getTimeOnAir(ack_total_len) / 1000);
+  uint32_t ack_timeout_ms = ack_toa_ms + 250;
+
+  const int MAX_ATTEMPTS = 3;
+  for (int attempt = 1; attempt <= MAX_ATTEMPTS; attempt++) {
+    esp_task_wdt_reset();
+    Serial.printf("LoRa TX seq=%lu attempt=%d/%d (ACK timeout=%lums)...\n",
+                  current_seq, attempt, MAX_ATTEMPTS, ack_timeout_ms);
+
+    int tx_state = radio->transmit(frame, len);
+    if (tx_state != RADIOLIB_ERR_NONE) {
+      Serial.printf("TX transmit failed: %d\n", tx_state);
+      delay(50);
+      continue;
+    }
+
+    uint8_t rx_buf[64] = {0};
+    uint32_t rx_start = millis();
+    int rx_state = radio->receive(rx_buf, sizeof(rx_buf), (uint16_t)ack_timeout_ms);
+    uint32_t rx_duration = millis() - rx_start;
+
+    if (rx_state == RADIOLIB_ERR_NONE) {
+      int rx_len = radio->getPacketLength();
+      if (rx_len >= (int)(HDR_SIZE + sizeof(AckPayload) + TAG_SIZE)) {
+        uint8_t rx_node_id = rx_buf[0];
+        if (rx_node_id == config.node_id) {
+          uint8_t ack_payload_buf[64] = {0};
+          if (gcm_decrypt(rx_buf, rx_len, ack_payload_buf, sizeof(ack_payload_buf))) {
+            AckPayload* ack = (AckPayload*)ack_payload_buf;
+            if (ack->node_id == config.node_id && ack->seq == current_seq) {
+              Serial.printf("ACK received! seq=%lu status=%d (took %lu ms)\n",
+                            current_seq, ack->status, rx_duration);
+              return true;
+            }
+          } else {
+            Serial.println("ACK decryption failed (Auth Fail)");
+          }
+        }
+      }
+    } else {
+      Serial.printf("ACK timeout (attempt %d/%d, err=%d)\n", attempt, MAX_ATTEMPTS, rx_state);
+    }
+
+    if (attempt < MAX_ATTEMPTS) {
+      delay(random(50, 150));
+    }
   }
 
-  Serial.printf("LoRa TX seq=%lu attempt=1 ToA=%lums\n", seq, toa_ms);
-  int state = radio->transmit(frame, len);
-
-  if (state == RADIOLIB_ERR_NONE && LORA_DUPLICATE_ENABLED) {
-    uint32_t jitter = (LORA_DUPLICATE_JITTER_MS > 0) ? random(0, LORA_DUPLICATE_JITTER_MS) : 0;
-    uint32_t delay_ms = toa_ms + LORA_DUPLICATE_MARGIN_MS + jitter;
-    Serial.printf("LoRa TX seq=%lu attempt=2 delay=%lums (jitter=%lums)\n", seq, delay_ms, jitter);
-    delay(delay_ms);
-    radio->transmit(frame, len);
-  }
-
-  return state;
+  return false;
 }
 
 void loopLoRa() {
@@ -195,11 +247,11 @@ void loopLoRa() {
     Serial.printf("BMP280: T=%.2f°C | P=%.1fhPa\n", t, p / 100.0f);
 
     payload.readings[payload.count].type = TYPE_BMP280_PRES;
-    payload.readings[payload.count].value = (int32_t)(p / 10.0f); // Pressure in tenths of hPa (Pa / 10)
+    payload.readings[payload.count].value = (int32_t)(p / 10.0f);
     payload.count++;
   }
 
-  // 3. Read TSL2561 (Light Lux photodiode sensor)
+  // 3. Read TSL2561
   if (tsl_detected && tsl != nullptr) {
     sensors_event_t event;
     bool readSuccess = false;
@@ -226,7 +278,7 @@ void loopLoRa() {
     }
   }
 
-  // 4. Read SCD41 (Single-Shot measurement mode for maximum battery life)
+  // 4. Read SCD41
   if (scd_detected && scd4x != nullptr) {
     scd4x->wakeUp();
     delay(20);
@@ -263,34 +315,33 @@ void loopLoRa() {
     } else {
       Serial.printf("SCD41 measureSingleShot failed: 0x%04X\n", scd_err);
     }
-    // Put SCD41 back to sleep immediately to save power (~3uA)
     scd4x->powerDown();
   }
 
-  // 5. Read INA226 (Voltage, Current, Power)
+  // 5. Read INA226
   if (ina_detected && ina != nullptr) {
     ina->setModeShuntBusContinuous();
     delay(10);
-    float v = ina->getBusVoltage(); // Voltage in Volts
-    float sv = ina->getShuntVoltage_mV(); // Shunt voltage in mV
-    float c = sv / 0.1f; // Direct calculation: I (mA) = V_shunt (mV) / R_shunt (0.1 Ohm)
-    float p = v * c;     // Direct calculation: P (mW) = V (V) * I (mA)
+    float v = ina->getBusVoltage();
+    float sv = ina->getShuntVoltage_mV();
+    float c = sv / 0.1f;
+    float p = v * c;
     addLog("INA226: V=%.2fV I=%.1fmA", v, c);
     Serial.printf("INA226: Voltage=%.3fV | Shunt=%.3fmV | Current=%.1fmA | Power=%.1fmW\n", v, sv, c, p);
 
     if (payload.count < 10) {
       payload.readings[payload.count].type = TYPE_INA226_VOLT;
-      payload.readings[payload.count].value = (int32_t)(v * 1000.0f); // stored in mV (scale = 0.001 -> V)
+      payload.readings[payload.count].value = (int32_t)(v * 1000.0f);
       payload.count++;
     }
     if (payload.count < 10) {
       payload.readings[payload.count].type = TYPE_INA226_CURR;
-      payload.readings[payload.count].value = (int32_t)(c * 10.0f); // stored in 0.1 mA resolution (scale = 0.1 -> mA)
+      payload.readings[payload.count].value = (int32_t)(c * 10.0f);
       payload.count++;
     }
     if (payload.count < 10) {
       payload.readings[payload.count].type = TYPE_INA226_POWER;
-      payload.readings[payload.count].value = (int32_t)(p * 10.0f); // stored in 0.1 mW resolution (scale = 0.1 -> mW)
+      payload.readings[payload.count].value = (int32_t)(p * 10.0f);
       payload.count++;
     }
   }
@@ -306,49 +357,43 @@ void loopLoRa() {
   uint8_t actual_payload_len = SENSOR_PAYLOAD_HDR_SIZE + (actual_count * sizeof(SensorReading));
 
   uint8_t frame[128];
-  uint8_t iv[12] = {0};
-
   frame[0] = config.node_id;
   frame[1] = (seq >> 24) & 0xFF;
   frame[2] = (seq >> 16) & 0xFF;
   frame[3] = (seq >> 8)  & 0xFF;
   frame[4] = (seq)       & 0xFF;
-  frame[5] = (node_random_id >> 24) & 0xFF;
+  frame[5] = MSG_TYPE_DATA;
   frame[6] = (node_random_id >> 16) & 0xFF;
   frame[7] = (node_random_id >> 8)  & 0xFF;
   frame[8] = (node_random_id)       & 0xFF;
 
+  uint8_t iv[12] = {0};
   memcpy(iv, frame, 9);
 
-  gcm.clear();
-  gcm.setKey(config.aes_key, 16);
-  gcm.setIV(iv, 12);
-  gcm.addAuthData(frame, HDR_SIZE);
-  gcm.encrypt(frame + HDR_SIZE, (uint8_t *)&payload, actual_payload_len);
-  gcm.computeTag(frame + HDR_SIZE + actual_payload_len, TAG_SIZE);
+  GCM<AES128> local_gcm;
+  local_gcm.setKey(config.aes_key, 16);
+  local_gcm.setIV(iv, 12);
+  local_gcm.addAuthData(frame, 9);
+  local_gcm.encrypt(frame + 9, (uint8_t *)&payload, actual_payload_len);
+  local_gcm.computeTag(frame + 9 + actual_payload_len, TAG_SIZE);
 
-  uint8_t len = HDR_SIZE + actual_payload_len + TAG_SIZE;
+  uint8_t len = 9 + actual_payload_len + TAG_SIZE;
 
-  // CAD (Channel Activity Detection) - Skipped for SX1262 without DIO1/BUSY interrupt wiring
-  // int cad = radio->scanChannel();
+  Serial.println("Starting reliable radio transmit...");
+  bool success = sendDataAndWaitForAck(frame, len, seq);
 
-  Serial.println("Starting radio transmit...");
-  uint32_t tTxStart = millis();
-  int state = sendReliableLoRaPacket(frame, len);
-  uint32_t tTxDur = millis() - tTxStart;
-
-  if (state == RADIOLIB_ERR_NONE) {
+  if (success) {
     addLog("TX OK: seq=%lu", seq);
-    Serial.printf("TX OK seq=%lu (took %lu ms)\n", seq++, tTxDur);
+    Serial.printf("TX OK seq=%lu ACK received!\n", seq++);
     if (current_error_code == ERR_TX_FAILED)
       current_error_code = ERR_NONE;
   } else {
-    addLog("TX FAIL: err=%d", state);
-    Serial.printf("TX failed: %d\n", state);
+    addLog("TX FAIL: seq=%lu", seq);
+    Serial.printf("TX failed (no ACK received for seq=%lu)\n", seq);
     current_error_code = ERR_TX_FAILED;
+    seq++;
   }
 
-  // Put sensors to low-power sleep mode before ESP32 Deep Sleep
   if (bmp_detected && bmp != nullptr) {
     bmp->setSampling(Adafruit_BMP280::MODE_SLEEP);
   }
@@ -356,29 +401,25 @@ void loopLoRa() {
     ina->shutDown();
   }
 
-  // 6. Put LoRa radio transceiver into deep sleep mode
   if (radio != nullptr) {
     radio->sleep();
   }
 
   uint32_t sleepSec = config.tx_interval;
-  if (sleepSec == 0) sleepSec = 60; // Safety fallback
+  if (sleepSec == 0) sleepSec = 60;
 
   if (ENABLE_DEEP_SLEEP) {
     Serial.printf("Entering Deep Sleep for %u seconds...\n", sleepSec);
     Serial.flush();
 
-    // Configure timer wakeup (in microseconds)
     esp_sleep_enable_timer_wakeup((uint64_t)sleepSec * 1000000ULL);
 
-    // Keep LORA_CS HIGH to lock SX1262/SX1278 SPI slave in deep sleep mode
     if (LORA_CS >= 0) {
       pinMode(LORA_CS, OUTPUT);
       digitalWrite(LORA_CS, HIGH);
       gpio_hold_en((gpio_num_t)LORA_CS);
     }
 
-    // Turn OFF status LED and hold its HIGH state during Deep Sleep
     if (LED_PIN >= 0) {
       pinMode(LED_PIN, OUTPUT);
       digitalWrite(LED_PIN, HIGH);
@@ -386,11 +427,9 @@ void loopLoRa() {
     }
 
     gpio_deep_sleep_hold_en();
-
-    // Start deep sleep (power consumption drops to ~15-20uA!)
     esp_deep_sleep_start();
   } else {
-    Serial.printf("Deep Sleep disabled in config.h. Delaying %u seconds (USB Serial remains connected)...\n", sleepSec);
+    Serial.printf("Deep Sleep disabled in config.h. Delaying %u seconds...\n", sleepSec);
     for (uint32_t i = 0; i < sleepSec; i++) {
       esp_task_wdt_reset();
       delay(1000);

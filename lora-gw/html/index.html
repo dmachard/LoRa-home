@@ -37,7 +37,7 @@
       <div class="legend-header">
         <h3 style="color: #f87171; display: flex; align-items: center; gap: 8px; margin: 0; font-size: 15px; font-weight: 700;">
           <svg style="width:16px; height:16px; color:#f87171;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
-          <span data-i18n="errors_title">Erreurs Radio & Diagnostic</span>
+          <span data-i18n="errors_title">Diagnostic LoRa</span>
         </h3>
         <div style="display: flex; align-items: center; gap: 10px;">
           <button class="btn-lang-toggle" onclick="clearErrorLogs()" style="padding: 3px 10px; font-size: 11px; cursor: pointer;" data-i18n="btn_clear">Effacer</button>
@@ -197,7 +197,7 @@
         btn_hide_logs: "Masquer les logs",
         btn_show_logs: "Afficher les logs",
         btn_errors: "Erreurs",
-        errors_title: "Erreurs Radio & Diagnostic",
+        errors_title: "Diagnostic LoRa",
         no_errors_logged: "Aucune erreur radio détectée. Tous les systèmes fonctionnent normalement.",
         btn_clear: "Effacer",
         logs_title: "Logs Radio",
@@ -626,41 +626,43 @@
           }
         }
 
-        if (data.gateway) {
-          const radioErr = data.gateway.radio_errors || 0;
-          const malformedErr = data.gateway.malformed_packets || 0;
-          const unknownNodesErr = data.gateway.unknown_nodes || 0;
-          const totalLostPackets = data.nodes ? data.nodes.reduce((acc, n) => acc + (n.packets_lost || 0), 0) : 0;
-          const totalErrCount = radioErr + malformedErr + unknownNodesErr + totalLostPackets;
+          if (data.gateway) {
+            const radioErr = data.gateway.radio_errors || 0;
+            const malformedErr = data.gateway.malformed_packets || 0;
+            const unknownNodesErr = data.gateway.unknown_nodes || 0;
+            const totalLostPackets = data.nodes ? data.nodes.reduce((acc, n) => acc + (n.packets_lost || 0), 0) : 0;
+            const totalDuplicates = data.nodes ? data.nodes.reduce((acc, n) => acc + (n.duplicate_packets || 0), 0) : 0;
+            // Application errors that affect data integrity: lost sequence packets, malformed payloads, unknown node attempts
+            const totalErrCount = malformedErr + unknownNodesErr + totalLostPackets;
 
-          const badgeEl = document.getElementById('errors-count-badge');
-          if (badgeEl) {
-            badgeEl.innerText = totalErrCount;
-            if (totalErrCount > 0) {
-              badgeEl.classList.add('has-errors');
-            } else {
-              badgeEl.classList.remove('has-errors');
+            const badgeEl = document.getElementById('errors-count-badge');
+            if (badgeEl) {
+              badgeEl.innerText = totalErrCount;
+              if (totalErrCount > 0) {
+                badgeEl.classList.add('has-errors');
+              } else {
+                badgeEl.classList.remove('has-errors');
+              }
+            }
+
+            const errCrc = data.gateway.radio_err_crc || 0;
+            const errHeader = data.gateway.radio_err_header || 0;
+            const errTimeout = data.gateway.radio_err_timeout || 0;
+            const errOther = data.gateway.radio_err_other || 0;
+
+            const statsSummaryEl = document.getElementById('errors-stats-summary');
+            if (statsSummaryEl) {
+              let breakdown = [];
+              if (errCrc > 0) breakdown.push(`CRC (-7): <b>${errCrc}</b>`);
+              if (errHeader > 0) breakdown.push(`Header (-3): <b>${errHeader}</b>`);
+              if (errTimeout > 0) breakdown.push(`Timeout (-6): <b>${errTimeout}</b>`);
+              if (errOther > 0) breakdown.push(`Autres: <b>${errOther}</b>`);
+              
+              const detailStr = breakdown.length > 0 ? ` (${breakdown.join(', ')})` : '';
+
+              statsSummaryEl.innerHTML = `Radio Errors: <b>${radioErr}</b>${detailStr} &nbsp;|&nbsp; Malformés: <b>${malformedErr}</b> &nbsp;|&nbsp; Nœuds Inconnus: <b>${unknownNodesErr}</b> &nbsp;|&nbsp; Duplicats (Retries ACK): <b>${totalDuplicates}</b> &nbsp;|&nbsp; ${t('err_lost_seq')}: <b>${totalLostPackets}</b>`;
             }
           }
-
-          const errCrc = data.gateway.radio_err_crc || 0;
-          const errHeader = data.gateway.radio_err_header || 0;
-          const errTimeout = data.gateway.radio_err_timeout || 0;
-          const errOther = data.gateway.radio_err_other || 0;
-
-          const statsSummaryEl = document.getElementById('errors-stats-summary');
-          if (statsSummaryEl) {
-            let breakdown = [];
-            if (errCrc > 0) breakdown.push(`CRC (-2): <b>${errCrc}</b>`);
-            if (errHeader > 0) breakdown.push(`Header (-3): <b>${errHeader}</b>`);
-            if (errTimeout > 0) breakdown.push(`Timeout (-4): <b>${errTimeout}</b>`);
-            if (errOther > 0) breakdown.push(`Autres: <b>${errOther}</b>`);
-            
-            const detailStr = breakdown.length > 0 ? ` (${breakdown.join(', ')})` : '';
-
-            statsSummaryEl.innerHTML = `Radio Errors: <b>${radioErr}</b>${detailStr} &nbsp;|&nbsp; Malformés: <b>${malformedErr}</b> &nbsp;|&nbsp; Nœuds Inconnus: <b>${unknownNodesErr}</b> &nbsp;|&nbsp; ${t('err_lost_seq')}: <b>${totalLostPackets}</b>`;
-          }
-        }
 
         if (data.logs && Array.isArray(data.logs)) {
           const errorLogs = data.logs.filter(l => {

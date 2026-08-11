@@ -44,6 +44,8 @@ void handleMetrics() {
   out += "# TYPE lora_global_radio_error_code_total counter\n";
   out += "# HELP lora_global_valid_packets_total Total valid packets received\n";
   out += "# TYPE lora_global_valid_packets_total counter\n";
+  out += "# HELP lora_global_ack_sent_total Total ACKs transmitted by gateway\n";
+  out += "# TYPE lora_global_ack_sent_total counter\n";
   out += "# HELP lora_global_rx_prep_microseconds Microseconds to release radio back to RX mode\n";
   out += "# TYPE lora_global_rx_prep_microseconds gauge\n";
   out += "# HELP lora_global_rx_total_microseconds Total packet processing time in microseconds\n";
@@ -134,6 +136,7 @@ void handleMetrics() {
   extern uint32_t global_radio_err_timeout;
   extern uint32_t global_radio_err_other;
   extern uint32_t global_valid_packets;
+  extern uint32_t global_ack_sent_total;
   extern uint32_t global_rx_processing_us;
   extern uint32_t global_total_processing_us;
   snprintf(global_line, sizeof(global_line),
@@ -149,19 +152,22 @@ void handleMetrics() {
            "lora_global_radio_errors_total %lu\n", global_radio_errors);
   out += global_line;
   snprintf(global_line, sizeof(global_line),
-           "lora_global_radio_error_code_total{code=\"-2\",description=\"CRC_MISMATCH\"} %lu\n", global_radio_err_crc);
+           "lora_global_radio_error_code_total{code=\"-7\",description=\"CRC_MISMATCH\"} %lu\n", global_radio_err_crc);
   out += global_line;
   snprintf(global_line, sizeof(global_line),
            "lora_global_radio_error_code_total{code=\"-3\",description=\"HEADER_DAMAGE\"} %lu\n", global_radio_err_header);
   out += global_line;
   snprintf(global_line, sizeof(global_line),
-           "lora_global_radio_error_code_total{code=\"-4\",description=\"RX_TIMEOUT\"} %lu\n", global_radio_err_timeout);
+           "lora_global_radio_error_code_total{code=\"-6\",description=\"RX_TIMEOUT\"} %lu\n", global_radio_err_timeout);
   out += global_line;
   snprintf(global_line, sizeof(global_line),
            "lora_global_radio_error_code_total{code=\"other\",description=\"OTHER_ERRORS\"} %lu\n", global_radio_err_other);
   out += global_line;
   snprintf(global_line, sizeof(global_line),
            "lora_global_valid_packets_total %lu\n", global_valid_packets);
+  out += global_line;
+  snprintf(global_line, sizeof(global_line),
+           "lora_global_ack_sent_total %lu\n", global_ack_sent_total);
   out += global_line;
   snprintf(global_line, sizeof(global_line),
            "lora_global_rx_prep_microseconds %lu\n", global_rx_processing_us);

@@ -45,28 +45,76 @@ void loraTask(void *pvParameters) {
   }
 }
 
+bool gcm_encrypt_ack(uint8_t target_node_id, uint32_t seq, uint8_t status, uint8_t *out_frame, uint8_t *out_len) {
+  out_frame[0] = target_node_id;
+  out_frame[1] = (seq >> 24) & 0xFF;
+  out_frame[2] = (seq >> 16) & 0xFF;
+  out_frame[3] = (seq >> 8)  & 0xFF;
+  out_frame[4] = (seq)       & 0xFF;
+  out_frame[5] = MSG_TYPE_ACK;
+  uint32_t rnd = esp_random();
+  out_frame[6] = (rnd >> 16) & 0xFF;
+  out_frame[7] = (rnd >> 8)  & 0xFF;
+  out_frame[8] = (rnd)       & 0xFF;
+
+  AckPayload ack;
+  ack.node_id = target_node_id;
+  ack.seq = seq;
+  ack.status = status;
+
+  uint8_t iv[12] = {0};
+  memcpy(iv, out_frame, 9);
+
+  GCM<AES128> local_gcm;
+  local_gcm.setKey(AES_KEY, 16);
+  local_gcm.setIV(iv, 12);
+  local_gcm.addAuthData(out_frame, 9);
+  local_gcm.encrypt(out_frame + 9, (uint8_t*)&ack, sizeof(AckPayload));
+  local_gcm.computeTag(out_frame + 9 + sizeof(AckPayload), TAG_SIZE);
+
+  *out_len = 9 + sizeof(AckPayload) + TAG_SIZE;
+  return true;
+}
+
+extern uint32_t global_ack_sent_total;
+
+void sendAck(uint8_t target_node_id, uint32_t seq, uint8_t status) {
+  uint8_t ack_frame[64];
+  uint8_t ack_len = 0;
+  if (gcm_encrypt_ack(target_node_id, seq, status, ack_frame, &ack_len)) {
+    int state = radio->transmit(ack_frame, ack_len);
+    if (state == RADIOLIB_ERR_NONE) {
+      global_ack_sent_total++;
+      addGwLog("Node %d | ACK SENT seq=%lu", target_node_id, seq);
+    } else {
+      addGwLog("Node %d | ACK TX FAILED code=%d", target_node_id, state);
+    }
+    radio->startReceive();
+  }
+}
+
 bool gcm_decrypt(const uint8_t *frame, uint8_t frame_len, uint8_t *payload,
                  uint8_t payload_size) {
-  if (frame_len < HDR_SIZE + TAG_SIZE)
+  if (frame_len < 9 + TAG_SIZE)
     return false;
-  uint8_t payload_len = frame_len - HDR_SIZE - TAG_SIZE;
+  uint8_t payload_len = frame_len - 9 - TAG_SIZE;
   if (payload_len > payload_size)
     return false;
 
   uint8_t iv[12] = {0};
   memcpy(iv, frame, 9);
 
-  const uint8_t *ciphertext = frame + HDR_SIZE;
+  const uint8_t *ciphertext = frame + 9;
   const uint8_t *tag = frame + frame_len - TAG_SIZE;
 
-  gcm.clear();
-  gcm.setKey(AES_KEY, 16);
-  gcm.setIV(iv, 12);
-  gcm.addAuthData(frame, HDR_SIZE);
-  gcm.decrypt(payload, ciphertext, payload_len);
+  GCM<AES128> local_gcm;
+  local_gcm.setKey(AES_KEY, 16);
+  local_gcm.setIV(iv, 12);
+  local_gcm.addAuthData(frame, 9);
+  local_gcm.decrypt(payload, ciphertext, payload_len);
 
   uint8_t computed_tag[TAG_SIZE];
-  gcm.computeTag(computed_tag, TAG_SIZE);
+  local_gcm.computeTag(computed_tag, TAG_SIZE);
   return memcmp(computed_tag, tag, TAG_SIZE) == 0;
 }
 
@@ -87,10 +135,6 @@ void processLoRaPacket() {
   float snr = radio->getSNR();
   uint32_t t4 = micros();
 
-  radio->startReceive();
-  uint32_t t5 = micros();
-  global_rx_processing_us = t5 - t0;
-
   if (state != RADIOLIB_ERR_NONE) {
     global_radio_errors++;
     if (state == RADIOLIB_ERR_CRC_MISMATCH) {
@@ -103,13 +147,15 @@ void processLoRaPacket() {
       global_radio_err_other++;
     }
     addGwLog("Radio RX error (code: %d | RSSI: %.0fdBm | SNR: %.1fdB)", state, rssi, snr);
+    radio->startReceive();
     global_total_processing_us = micros() - t0;
     return;
   }
 
-  if (len < HDR_SIZE + TAG_SIZE) {
+  if (len < 9 + TAG_SIZE) {
     global_malformed_packets++;
     addGwLog("Packet too short: %d bytes", len);
+    radio->startReceive();
     global_total_processing_us = micros() - t0;
     return;
   }
@@ -118,16 +164,33 @@ void processLoRaPacket() {
   if (node_id >= MAX_NODES) {
     global_unknown_nodes++;
     addGwLog("Node %d | UNKNOWN NODE ID", node_id);
+    radio->startReceive();
     global_total_processing_us = micros() - t0;
     return;
   }
 
-  uint8_t payload_len = len - HDR_SIZE - TAG_SIZE;
+  uint8_t msg_type = frame[5];
+  if (msg_type == MSG_TYPE_ACK) {
+    radio->startReceive();
+    global_total_processing_us = micros() - t0;
+    return;
+  }
+
+  if (msg_type != MSG_TYPE_DATA) {
+    global_malformed_packets++;
+    addGwLog("Node %d | UNKNOWN MSG TYPE: 0x%02X", node_id, msg_type);
+    radio->startReceive();
+    global_total_processing_us = micros() - t0;
+    return;
+  }
+
+  uint8_t payload_len = len - 9 - TAG_SIZE;
   uint8_t payload[128] = {0};
 
   if (payload_len > sizeof(payload)) {
     global_malformed_packets++;
     addGwLog("Node %d | Packet too large (%d bytes)", node_id, len);
+    radio->startReceive();
     global_total_processing_us = micros() - t0;
     return;
   }
@@ -136,20 +199,44 @@ void processLoRaPacket() {
   if (!gcm_decrypt(frame, len, payload, sizeof(payload))) {
     n.auth_failures++;
     addGwLog("Node %d | AUTH FAILED (AES key mismatch)", node_id);
+    radio->startReceive();
     global_total_processing_us = micros() - t0;
     return;
   }
 
   global_valid_packets++;
 
-
   uint32_t seq = ((uint32_t)frame[1] << 24) | ((uint32_t)frame[2] << 16) |
                  ((uint32_t)frame[3] << 8) | ((uint32_t)frame[4]);
-  uint32_t random_id = ((uint32_t)frame[5] << 24) | ((uint32_t)frame[6] << 16) |
-                        ((uint32_t)frame[7] << 8) | ((uint32_t)frame[8]);
+  uint32_t random_id = ((uint32_t)frame[6] << 16) | ((uint32_t)frame[7] << 8) | ((uint32_t)frame[8]);
+
+  // Session-based Reboot, Duplicate, and Packet Loss Decision Tree
+  if (n.seen) {
+    if (random_id != n.last_random_id) {
+      // New boot session detected (TRNG session_id changed)
+      addGwLog("Node %d | NEW SESSION / REBOOT (seq %lu -> %lu, session %06lX -> %06lX)",
+               node_id, n.seq, seq, n.last_random_id, random_id);
+      n.reboots++;
+      n.seq = seq;
+      n.last_random_id = random_id;
+    } else if (seq == n.seq) {
+      // Same session + same sequence number = Retry / Duplicate
+      n.duplicate_packets++;
+      addGwLog("Node %d | DUPLICATE seq=%lu (resending ACK)", node_id, seq);
+      sendAck(node_id, seq, 0);
+      global_total_processing_us = micros() - t0;
+      return;
+    } else if (seq > n.seq + 1) {
+      // Same session + sequence gap = Packet loss
+      uint32_t lost = seq - (n.seq + 1);
+      n.packets_lost += lost;
+      Serial.printf("Node %d | PACKET LOSS DETECTED: %lu packet(s) lost (seq %lu -> %lu)\n", node_id, lost, n.seq, seq);
+      addGwLog("Node %d | PACKET LOSS: %lu packet(s) lost (seq %lu -> %lu)", node_id, lost, n.seq, seq);
+    }
+  }
+
   uint8_t current_reset_reason = 0;
   uint8_t current_error_code = 0;
-
   bool is_sensor_payload = (payload_len >= SENSOR_PAYLOAD_HDR_SIZE);
   SensorPayload sp;
   memset(&sp, 0, sizeof(sp));
@@ -158,29 +245,6 @@ void processLoRaPacket() {
     memcpy(&sp, payload, min((size_t)payload_len, sizeof(sp)));
     current_reset_reason = sp.reset_reason;
     current_error_code = sp.error_code;
-  }
-
-  if (n.seen) {
-    if (random_id != n.last_random_id && current_reset_reason != 8) {
-      // Node rebooted (new random session ID generated by node TRNG)
-      Serial.printf("Node %d | NEW REBOOT SESSION DETECTED (random_id: %08X -> %08X, reason: %d)\n",
-                    node_id, n.last_random_id, random_id, current_reset_reason);
-      n.reboots++;
-    } else if (seq < n.seq && current_reset_reason != 8) {
-      Serial.printf("Node %d | WARNING: UNEXPECTED SEQ ROLLBACK (seq %lu < %lu)\n", node_id, seq, n.seq);
-      n.reboots++;
-    } else if (seq == n.seq) {
-      // Duplicate packet within the same boot session -> ignore
-      n.duplicate_packets++;
-      addGwLog("LoRa duplicate ignored node=%d seq=%lu", node_id, seq);
-      global_total_processing_us = micros() - t0;
-      return;
-    } else if (seq > n.seq + 1) {
-      uint32_t lost = seq - (n.seq + 1);
-      n.packets_lost += lost;
-      Serial.printf("Node %d | PACKET LOSS DETECTED: %lu packet(s) lost (seq %lu -> %lu)\n", node_id, lost, n.seq, seq);
-      addGwLog("Node %d | PACKET LOSS: %lu packet(s) lost (seq %lu -> %lu)", node_id, lost, n.seq, seq);
-    }
   }
 
   n.seen = true;
@@ -208,12 +272,17 @@ void processLoRaPacket() {
   }
 
   last_active_node_id = node_id;
-  global_total_processing_us = micros() - t0;
 
-  Serial.printf("LoRa RX Breakdown | readData: %lu us | getPacketLength: %lu us | getRSSI: %lu us | getSNR: %lu us | startReceive: %lu us | prep to RX: %lu us | total: %lu us\n",
-                t1 - t0, t2 - t1, t3 - t2, t4 - t3, t5 - t4, global_rx_processing_us, global_total_processing_us);
+  uint32_t t5 = micros();
+  sendAck(node_id, seq, 0);
+  uint32_t t6 = micros();
+
+  global_rx_processing_us = t6 - t5;
+  global_total_processing_us = t6 - t0;
+
+  Serial.printf("LoRa RX Breakdown | readData: %lu us | getPacketLength: %lu us | getRSSI: %lu us | getSNR: %lu us | sendAck+RX: %lu us | total: %lu us\n",
+                t1 - t0, t2 - t1, t3 - t2, t4 - t3, global_rx_processing_us, global_total_processing_us);
 }
-
 
 void initLoRa() {
   if (oled_initialized) {
