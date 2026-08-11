@@ -1,77 +1,153 @@
-# LoRa@Home
+# LoRa@Home — Secure ESP32 LoRa Telemetry System
 
-An end-to-end telemetry system featuring a modular **ESP32-C6 Web Gateway** and configurable **ESP32-C3 Sensor Client Nodes** transmitting encrypted environmental data using **LoRa (433 MHz)** and **AES-128 GCM** security.
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
+[![Platform](https://img.shields.io/badge/Platform-ESP32--C6%20%7C%20ESP32--C3-blue.svg)](https://www.espressif.com/)
+[![Radio](https://img.shields.io/badge/Radio-SX1262%20%7C%20SX1278%20(433MHz)-green.svg)](doc/hardware.md)
+[![Security](https://img.shields.io/badge/Security-AES--128%20GCM-red.svg)](doc/security.md)
+[![Metrics](https://img.shields.io/badge/Monitoring-Prometheus-orange.svg)](doc/architecture.md)
 
-The gateway exports **Prometheus metrics** (`/metrics`) for Grafana visualization and hosts a responsive local diagnostic dashboard. Both devices store credentials dynamically inside **Non-Volatile Memory (NVM)** and support wireless **Web Bluetooth (BLE) provisioning** directly from modern web browsers.
+An end-to-end, privacy-focused home telemetry network featuring a modular **ESP32-C6 Web Gateway** and configurable **ESP32-C3 Sensor Client Nodes**. Sensor measurements are securely transmitted over **LoRa** using authenticated **AES-128 GCM** encryption.
+
+The Gateway exports **Prometheus metrics** (`/metrics`) for Grafana visualization, serves a live diagnostic dashboard, and handles seamless wireless **Web Bluetooth (BLE) provisioning** directly from modern web browsers.
+
+---
+
+## Interface Preview
 
 ![LoRa Gateway Dashboard](doc/imgs/webinterface.png)
 
 ---
 
-## Compatible Hardware & Sensors
+## Key Features
 
-### Supported LoRa Transceivers
-- **SX1262** (433 / 868 / 915 MHz with BUSY pin line)
-- **SX1278 / SX1276** (433 / 868 MHz classic transceivers)
-
-### Supported Sensors
-
-| Sensor | Measurements | Physical Quantities & Units |
-|---|---|---|
-| **AHT20** | Temperature & Relative Humidity | °C, % RH |
-| **BMP280** | Temperature & Barometric Pressure | °C, hPa |
-| **TSL2561** | Ambient Light Intensity | Lux |
-| **SCD41 / SCD40** | Photoacoustic CO₂ Concentration, Temp & Humidity | ppm, °C, % |
-| **INA226** | Bus / Battery Voltage Monitor | V |
+- **Authenticated AES-128 GCM Encryption**: Hardware-accelerated cryptographic protection with 96-bit IVs and 32-bit auth tags preventing spoofing and replay attacks.
+- **Long-Range LoRa Protocol**: Custom binary protocol (`shared_protocol.h`) optimized for low bandwidth, range, and battery efficiency.
+- **Web Gateway & Diagnostics**: Embedded Web UI on ESP32-C6 for real-time node monitoring, signal strength (RSSI/SNR), packet counters, and configuration.
+- **Prometheus Integration**: Exposes standard `/metrics` endpoint for Grafana visual dashboards, alerts, and time-series history.
+- **Browser BLE Provisioning**: Provision WiFi credentials, AES security keys, and Node/Gateway settings via Web Bluetooth directly in Chrome/Edge without needing custom apps.
+- **Plug & Play Sensor Auto-Discovery**: Client nodes dynamically detect connected I2C sensors at startup (AHT20, BMP280, TSL2561, SCD40/SCD41, INA226).
+- **Dynamic NVM Storage**: Persistent parameter management using ESP32 Preferences/NVM storage.
+- **Low Power Ready**: Deep sleep state support on sensor client nodes for battery-powered operations.
 
 ---
 
-## Workspace Structure
+## System Architecture
 
-- [**`lora-gw/`**](./lora-gw/): ESP32-C6 central gateway receiver, web server, and diagnostic dashboard.
-- [**`lora-node/`**](./lora-node/): ESP32-C3 telemetry client node code with I2C auto-discovery.
-- [**`shared_protocol.h`**](./shared_protocol.h): Central binary payload structure and sensor metadata definitions.
+```mermaid
+graph TD
+    subgraph Client Nodes
+        N1[ESP32-C3 Node 1<br/>AHT20 / BMP280]
+        N2[ESP32-C3 Node 2<br/>SCD41 CO2 / INA226]
+    end
+
+    subgraph LoRa Wireless Network
+        N1 -->|AES-128 GCM Encrypted | GW
+        N2 -->|AES-128 GCM Encrypted | GW
+    end
+
+    subgraph Gateway System
+        GW[ESP32-C6 Gateway<br/>SX1262 LoRa Receiver]
+        GW -->|Web UI & API| B[Browser Dashboard]
+        GW -->|/metrics| P[Prometheus / Grafana]
+        GW <-->|Web BLE| BLE[Web Bluetooth Provisioning]
+    end
+```
 
 ---
 
-## Documentation
+## Supported Hardware & Sensors
 
-Comprehensive documentation is split into dedicated guides:
+### Microcontrollers & Radios
+| Role | Microcontroller | LoRa Transceiver | Frequencies |
+|---|---|---|---|
+| **Gateway** | ESP32-C6 (RISC-V, WiFi 6, BLE 5) | SX1262 / SX1278 | 433 MHz (Default), 868 / 915 MHz |
+| **Node** | ESP32-C3 (RISC-V, BLE 5) | SX1278 / SX1276 / SX1262 | 433 MHz (Default), 868 MHz |
 
-* [**System Architecture**](./doc/architecture.md): High-level system overview, component breakdowns, and communication pipelines.
-* [**Compatible Sensors Guide**](./doc/sensors.md): Complete list of supported hardware sensors, I2C addresses, scaling rules, and guide to adding new sensors.
-* [**Hardware Pinouts & Wiring**](./doc/hardware.md): Detailed pinout tables and wiring diagrams for ESP32-C6 Gateway and ESP32-C3 Node hardware.
-* [**Configuration & Provisioning**](./doc/configuration.md): Web UI administration, BLE provisioning workflow, and wireless BLE OTA flashing.
-* [**Protocol Specification**](./doc/protocol.md): Binary frame layout, `SensorPayload` structure, sensor type IDs, and scaling rules.
-* [**Security Model**](./doc/security.md): AES-128 GCM encryption details, IV construction, replay protection, and BLE authentication.
+### Supported I2C Sensors
+| Sensor | Measurements | Quantities & Units | I2C Address |
+|---|---|---|---|
+| **AHT20** | Temperature & Relative Humidity | °C, % RH | `0x38` |
+| **BMP280** | Temperature & Barometric Pressure | °C, hPa | `0x76` / `0x77` |
+| **TSL2561** | Ambient Light Intensity | Lux | `0x39` |
+| **SCD40 / SCD41** | CO₂ Concentration, Temp & Humidity | ppm, °C, % RH | `0x62` |
+| **INA226** | Bus / Battery Voltage & Current Monitor | V, mA | `0x40` |
+
+---
+
+## Repository Layout
+
+```text
+esp32-lora-gateway-nodes/
+├── lora-gw/           # Central Gateway firmware (ESP32-C6 + Web UI + Prometheus)
+│   ├── lora-gw.ino    # Main gateway sketch & loop
+│   ├── html/          # Embedded Web UI assets (HTML/CSS/JS)
+│   └── Makefile       # Build automation and asset generator
+├── lora-node/         # Sensor Client Node firmware (ESP32-C3 + I2C discovery)
+│   ├── lora-node.ino  # Node sketch & sensor polling loop
+│   └── Makefile       # Build automation
+├── doc/               # Technical specifications & hardware documentation
+├── shared_protocol.h  # Common binary telemetry packet & sensor definition structures
+├── DEVELOPMENT.md     # Detailed development setup & compilation guide
+└── LICENSE            # MIT License
+```
 
 ---
 
 ## Quick Start (Build & Flash)
 
-### 1. Install `arduino-cli` & Libraries
-```bash
-# Install arduino-cli globally
-curl -fsSL https://raw.githubusercontent.com/arduino/arduino-cli/master/install.sh | BINDIR=~/.local/bin sh
+### 1. Prerequisites
+Install [`arduino-cli`](https://arduino.github.io/arduino-cli/) globally:
 
-# Install ESP32 platform core
+```bash
+curl -fsSL https://raw.githubusercontent.com/arduino/arduino-cli/master/install.sh | BINDIR=~/.local/bin sh
+```
+
+Install ESP32 core and required libraries:
+```bash
+# Update index and install core
 arduino-cli core update-index
 arduino-cli core install esp32:esp32
 
 # Install required library dependencies
-arduino-cli lib install "RadioLib" "Crypto" "Adafruit SSD1306" "Adafruit GFX Library" "Adafruit AHTX0" "Adafruit BusIO" "Adafruit Unified Sensor" "NimBLE-Arduino" "ArduinoJson" "NimBLE-DataPipe"
+arduino-cli lib install "RadioLib" "Crypto" "Adafruit SSD1306" "Adafruit GFX Library" \
+                        "Adafruit AHTX0" "Adafruit BusIO" "Adafruit Unified Sensor" \
+                        "NimBLE-Arduino" "ArduinoJson" "NimBLE-DataPipe"
 ```
 
-### 2. Compile & Flash the Gateway (`lora-gw`)
+### 2. Compile & Flash Gateway (`lora-gw`)
 ```bash
 cd lora-gw
-make         # Generates HTML headers and compiles ESP32-C6 firmware
-make upload  # Flash via USB (Default port: /dev/ttyACM0)
+make         # Generates web assets & compiles ESP32-C6 firmware
+make upload  # Flashes via USB (Default port: /dev/ttyACM0)
 ```
 
-### 3. Compile & Flash the Node (`lora-node`)
+### 3. Compile & Flash Client Node (`lora-node`)
 ```bash
 cd lora-node
 make compile # Compiles ESP32-C3 node firmware
-make upload  # Flash via USB (Default port: /dev/ttyACM0)
+make upload  # Flashes via USB (Default port: /dev/ttyACM0)
 ```
+
+> [!TIP]
+> For advanced build flags, custom serial ports, and monitor usage, refer to [DEVELOPMENT.md](DEVELOPMENT.md).
+
+---
+
+## Complete Documentation
+
+Detailed technical documentation is available in the [`doc/`](doc/) directory:
+
+- [**System Architecture**](doc/architecture.md): Overview of gateway pipeline, node lifecycle, and data flow.
+- [**Protocol Specification**](doc/protocol.md): Frame formats, field layouts, scaling factors, and packet parsing rules.
+- [**Security Model**](doc/security.md): AES-128 GCM encryption scheme, IV construction, replay prevention, and BLE security.
+- [**Hardware & Wiring**](doc/hardware.md): Complete pinout diagrams and schematic wiring tables for Gateway and Node hardware.
+- [**Compatible Sensors**](doc/sensors.md): Sensor driver specifications, I2C address map, and instructions for extending sensor support.
+- [**Configuration & Provisioning**](doc/configuration.md): Web UI dashboard navigation, BLE Web Bluetooth provisioning workflow, and OTA updates.
+
+---
+
+## License
+
+Distributed under the MIT License. See [`LICENSE`](LICENSE) for details.
+
+
