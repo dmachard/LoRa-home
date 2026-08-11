@@ -1,10 +1,6 @@
 # LoRa@Home — Secure ESP32 LoRa Telemetry System
 
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 [![Platform](https://img.shields.io/badge/Platform-ESP32--C6%20%7C%20ESP32--C3-blue.svg)](https://www.espressif.com/)
-[![Radio](https://img.shields.io/badge/Radio-SX1262%20%7C%20SX1278%20-green.svg)](doc/hardware.md)
-[![Security](https://img.shields.io/badge/Security-AES--128%20GCM-red.svg)](doc/security.md)
-[![Metrics](https://img.shields.io/badge/Monitoring-Prometheus-orange.svg)](doc/architecture.md)
 
 An end-to-end, privacy-focused home telemetry network featuring a modular **ESP32-C6 Web Gateway** and configurable **ESP32-C3 Sensor Client Nodes**. Sensor measurements are securely transmitted over **LoRa** using authenticated **AES-128 GCM** encryption.
 
