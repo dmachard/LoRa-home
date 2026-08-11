@@ -2,7 +2,7 @@
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 [![Platform](https://img.shields.io/badge/Platform-ESP32--C6%20%7C%20ESP32--C3-blue.svg)](https://www.espressif.com/)
-[![Radio](https://img.shields.io/badge/Radio-SX1262%20%7C%20SX1278%20(433MHz)-green.svg)](doc/hardware.md)
+[![Radio](https://img.shields.io/badge/Radio-SX1262%20%7C%20SX1278%20-green.svg)](doc/hardware.md)
 [![Security](https://img.shields.io/badge/Security-AES--128%20GCM-red.svg)](doc/security.md)
 [![Metrics](https://img.shields.io/badge/Monitoring-Prometheus-orange.svg)](doc/architecture.md)
 
@@ -28,68 +28,6 @@ The Gateway exports **Prometheus metrics** (`/metrics`) for Grafana visualizatio
 - **Plug & Play Sensor Auto-Discovery**: Client nodes dynamically detect connected I2C sensors at startup (AHT20, BMP280, TSL2561, SCD40/SCD41, INA226).
 - **Dynamic NVM Storage**: Persistent parameter management using ESP32 Preferences/NVM storage.
 - **Low Power Ready**: Deep sleep state support on sensor client nodes for battery-powered operations.
-
----
-
-## System Architecture
-
-```mermaid
-graph TD
-    subgraph Client Nodes
-        N1[ESP32-C3 Node 1<br/>AHT20 / BMP280]
-        N2[ESP32-C3 Node 2<br/>SCD41 CO2 / INA226]
-    end
-
-    subgraph LoRa Wireless Network
-        N1 -->|AES-128 GCM Encrypted | GW
-        N2 -->|AES-128 GCM Encrypted | GW
-    end
-
-    subgraph Gateway System
-        GW[ESP32-C6 Gateway<br/>SX1262 LoRa Receiver]
-        GW -->|Web UI & API| B[Browser Dashboard]
-        GW -->|/metrics| P[Prometheus / Grafana]
-        GW <-->|Web BLE| BLE[Web Bluetooth Provisioning]
-    end
-```
-
----
-
-## Supported Hardware & Sensors
-
-### Microcontrollers & Radios
-| Role | Microcontroller | LoRa Transceiver | Frequencies |
-|---|---|---|---|
-| **Gateway** | ESP32-C6 (RISC-V, WiFi 6, BLE 5) | SX1262 / SX1278 | 433 MHz (Default), 868 / 915 MHz |
-| **Node** | ESP32-C3 (RISC-V, BLE 5) | SX1278 / SX1276 / SX1262 | 433 MHz (Default), 868 MHz |
-
-### Supported I2C Sensors
-| Sensor | Measurements | Quantities & Units | I2C Address |
-|---|---|---|---|
-| **AHT20** | Temperature & Relative Humidity | °C, % RH | `0x38` |
-| **BMP280** | Temperature & Barometric Pressure | °C, hPa | `0x76` / `0x77` |
-| **TSL2561** | Ambient Light Intensity | Lux | `0x39` |
-| **SCD40 / SCD41** | CO₂ Concentration, Temp & Humidity | ppm, °C, % RH | `0x62` |
-| **INA226** | Bus / Battery Voltage & Current Monitor | V, mA | `0x40` |
-
----
-
-## Repository Layout
-
-```text
-esp32-lora-gateway-nodes/
-├── lora-gw/           # Central Gateway firmware (ESP32-C6 + Web UI + Prometheus)
-│   ├── lora-gw.ino    # Main gateway sketch & loop
-│   ├── html/          # Embedded Web UI assets (HTML/CSS/JS)
-│   └── Makefile       # Build automation and asset generator
-├── lora-node/         # Sensor Client Node firmware (ESP32-C3 + I2C discovery)
-│   ├── lora-node.ino  # Node sketch & sensor polling loop
-│   └── Makefile       # Build automation
-├── doc/               # Technical specifications & hardware documentation
-├── shared_protocol.h  # Common binary telemetry packet & sensor definition structures
-├── DEVELOPMENT.md     # Detailed development setup & compilation guide
-└── LICENSE            # MIT License
-```
 
 ---
 

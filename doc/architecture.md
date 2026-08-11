@@ -8,19 +8,24 @@ This document presents the detailed system architecture of the **LoRa Home Gatew
 
 The system operates as a single-channel, encrypted local LoRa telemetry network, bridging low-power sensor nodes to IP networks and monitoring platforms.
 
-```
-+--------------------------+               +----------------------------+               +----------------------+
-|  ESP32-C3 Node           |  Encrypted    |   ESP32-C6 Gateway         |  HTTP/JSON    | Prometheus / Grafana |
-| (SX1262/SX1278 + Sensors)| ------------> | (SX1262/SX1278 + Web Srv) | ------------> |   /metrics Endpoint  |
-+--------------------------+  LoRa 433MHz  +----------------------------+               +----------------------+
-             ^                                           ^
-             | BLE Provisioning                          | BLE / Web Config
-             +--------------------+   +------------------+
-                                  |   |
-                            +---------------+
-                            | Web Browser   |
-                            | (Dashboard)   |
-                            +---------------+
+```mermaid
+graph TD
+    subgraph Client Nodes
+        N1[ESP32-C3 Node 1<br/>AHT20 / BMP280]
+        N2[ESP32-C3 Node 2<br/>SCD41 CO2 / INA226]
+    end
+
+    subgraph LoRa Wireless Network
+        N1 -->|AES-128 GCM Encrypted| GW
+        N2 -->|AES-128 GCM Encrypted| GW
+    end
+
+    subgraph Gateway System
+        GW[ESP32-C6 Gateway<br/>SX1262 LoRa Receiver]
+        GW -->|Web UI & API| B[Browser Dashboard]
+        GW -->|/metrics| P[Prometheus / Grafana]
+        GW <-->|Web BLE| BLE[Web Bluetooth Provisioning]
+    end
 ```
 
 ---
