@@ -23,7 +23,7 @@ struct NodeData {
   bool seen;
   
   uint8_t readings_count;
-  SensorReading readings[10];
+  SensorReading readings[16];
 };
 
 struct GwLogEntry {

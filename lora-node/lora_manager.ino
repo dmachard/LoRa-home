@@ -162,8 +162,14 @@ bool sendDataAndWaitForAck(const uint8_t* frame, uint8_t len, uint32_t current_s
   uint32_t ack_toa_ms = (uint32_t)(radio->getTimeOnAir(ack_total_len) / 1000);
   uint32_t ack_timeout_ms = ack_toa_ms + 250;
 
+  tx_total++;
+  bool had_retry = false;
+
   const int MAX_ATTEMPTS = 3;
   for (int attempt = 1; attempt <= MAX_ATTEMPTS; attempt++) {
+    if (attempt > 1) {
+      had_retry = true;
+    }
     esp_task_wdt_reset();
     Serial.printf("LoRa TX seq=%lu attempt=%d/%d (ACK timeout=%lums)...\n",
                   current_seq, attempt, MAX_ATTEMPTS, ack_timeout_ms);
@@ -191,6 +197,10 @@ bool sendDataAndWaitForAck(const uint8_t* frame, uint8_t len, uint32_t current_s
             if (ack->node_id == config.node_id && ack->seq == current_seq) {
               Serial.printf("ACK received! seq=%lu status=%d (took %lu ms)\n",
                             current_seq, ack->status, rx_duration);
+              tx_success++;
+              if (had_retry) {
+                tx_retries++;
+              }
               return true;
             }
           } else {
@@ -207,6 +217,10 @@ bool sendDataAndWaitForAck(const uint8_t* frame, uint8_t len, uint32_t current_s
     }
   }
 
+  tx_failed++;
+  if (had_retry) {
+    tx_retries++;
+  }
   return false;
 }
 
@@ -339,14 +353,41 @@ void loopLoRa() {
       payload.readings[payload.count].value = (int32_t)(c * 10.0f);
       payload.count++;
     }
-    if (payload.count < 10) {
-      payload.readings[payload.count].type = TYPE_INA226_POWER;
-      payload.readings[payload.count].value = (int32_t)(p * 10.0f);
-      payload.count++;
-    }
+
   }
 
-  uint8_t actual_count = min((int)payload.count, 10);
+  // 6. Add LoRa statistics
+  if (payload.count < 16) {
+    payload.readings[payload.count].type = TYPE_LORA_TX_TOTAL;
+    payload.readings[payload.count].value = (int32_t)tx_total;
+    payload.count++;
+  }
+  if (payload.count < 16) {
+    payload.readings[payload.count].type = TYPE_LORA_TX_SUCCESS;
+    payload.readings[payload.count].value = (int32_t)tx_success;
+    payload.count++;
+  }
+  if (payload.count < 16) {
+    payload.readings[payload.count].type = TYPE_LORA_TX_FAILED;
+    payload.readings[payload.count].value = (int32_t)tx_failed;
+    payload.count++;
+  }
+  if (payload.count < 16) {
+    payload.readings[payload.count].type = TYPE_LORA_TX_RETRIES;
+    payload.readings[payload.count].value = (int32_t)tx_retries;
+    payload.count++;
+  }
+  if (payload.count < 16) {
+    payload.readings[payload.count].type = TYPE_LORA_TX_POWER;
+    payload.readings[payload.count].value = (int32_t)config.lora_power;
+    payload.count++;
+  }
+
+  addLog("LoRa Stats: Tot=%lu OK=%lu Fail=%lu Rtr=%lu Pwr=%ddBm", tx_total, tx_success, tx_failed, tx_retries, config.lora_power);
+  Serial.printf("LoRa Stats: Total=%lu | Success=%lu | Failed=%lu | Retries=%lu | Power=%ddBm (Payload count=%d)\n",
+                tx_total, tx_success, tx_failed, tx_retries, config.lora_power, payload.count);
+
+  uint8_t actual_count = min((int)payload.count, 16);
   payload.count = actual_count;
   payload.reset_reason = last_reset_reason;
   payload.error_code = current_error_code;
@@ -385,12 +426,9 @@ void loopLoRa() {
   if (success) {
     addLog("TX OK: seq=%lu", seq);
     Serial.printf("TX OK seq=%lu ACK received!\n", seq++);
-    if (current_error_code == ERR_TX_FAILED)
-      current_error_code = ERR_NONE;
   } else {
     addLog("TX FAIL: seq=%lu", seq);
     Serial.printf("TX failed (no ACK received for seq=%lu)\n", seq);
-    current_error_code = ERR_TX_FAILED;
     seq++;
   }
 
@@ -410,7 +448,9 @@ void loopLoRa() {
 
   if (ENABLE_DEEP_SLEEP) {
     Serial.printf("Entering Deep Sleep for %u seconds...\n", sleepSec);
-    Serial.flush();
+    if (Serial) {
+      Serial.flush();
+    }
 
     esp_sleep_enable_timer_wakeup((uint64_t)sleepSec * 1000000ULL);
 

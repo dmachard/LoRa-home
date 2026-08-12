@@ -121,6 +121,25 @@ def process_html(src_path, dst_path, html_dir, guard_name, var_name):
     print(f"  -> {os.path.basename(dst_path)} written")
 
 
+def process_raw(src_path, dst_path, guard_name, var_name, content_type_comment):
+    """Bundle a raw text file (JS, JSON, SVG) into a C PROGMEM string header."""
+    if not os.path.exists(src_path):
+        print(f"WARNING: {src_path} not found!")
+        return
+    with open(src_path, "r", encoding="utf-8") as f:
+        content = f.read()
+    print(f"\n[{os.path.basename(src_path)}] -> {len(content)} bytes")
+    with open(dst_path, "w", encoding="utf-8") as f:
+        f.write(f"#ifndef {guard_name}\n")
+        f.write(f"#define {guard_name}\n\n")
+        f.write("#include <pgmspace.h>\n\n")
+        f.write(f"const char {var_name}[] PROGMEM = R\"rawliteral(\n")
+        f.write(content)
+        f.write("\n)rawliteral\";\n\n")
+        f.write(f"#endif // {guard_name}\n")
+    print(f"  -> {os.path.basename(dst_path)} written")
+
+
 def main():
     script_dir = os.path.dirname(os.path.abspath(__file__))
     html_dir = os.path.join(script_dir, "html")
@@ -158,6 +177,23 @@ def main():
         f.write("const char UPDATE_OK_HTML[] PROGMEM = R\"rawliteral(\nOK\n)rawliteral\";\n\n")
         f.write("#endif // UPDATE_HTML_H\n")
     print(f"  -> update_html.h written")
+
+    # PWA assets: Service Worker, Web Manifest, SVG icon
+    process_raw(
+        os.path.join(html_dir, "sw.js"),
+        os.path.join(script_dir, "sw_js.h"),
+        "SW_JS_H", "SW_JS", "application/javascript"
+    )
+    process_raw(
+        os.path.join(html_dir, "manifest.json"),
+        os.path.join(script_dir, "manifest_json.h"),
+        "MANIFEST_JSON_H", "MANIFEST_JSON", "application/manifest+json"
+    )
+    process_raw(
+        os.path.join(html_dir, "icon.svg"),
+        os.path.join(script_dir, "icon_svg.h"),
+        "ICON_SVG_H", "ICON_SVG", "image/svg+xml"
+    )
 
 
 if __name__ == "__main__":

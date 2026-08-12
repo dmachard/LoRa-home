@@ -152,4 +152,4 @@ struct AckPayload {
 | `9` | `TYPE_SCD40_CO2` | SCD40/SCD41 | CO2 Concentration | raw (ppm) |
 | `10` | `TYPE_INA226_VOLT` | INA226 | Bus / Battery Voltage | raw / 1000.0f (V) |
 | `11` | `TYPE_INA226_CURR` | INA226 | Current | raw / 10.0f (mA) |
-| `12` | `TYPE_INA226_POWER` | INA226 | Power | raw / 10.0f (mW) |
+

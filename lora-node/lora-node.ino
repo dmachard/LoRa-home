@@ -53,6 +53,12 @@ RTC_DATA_ATTR uint32_t node_random_id = 0;
 // LoRa sequence number stored in RTC memory across deep sleep
 RTC_DATA_ATTR uint32_t seq = 0;
 
+// LoRa statistics counters stored in RTC memory across deep sleep
+RTC_DATA_ATTR uint32_t tx_total = 0;
+RTC_DATA_ATTR uint32_t tx_success = 0;
+RTC_DATA_ATTR uint32_t tx_failed = 0;
+RTC_DATA_ATTR uint32_t tx_retries = 0;
+
 enum ResetReason {
   RESET_POWERON = 1,
   RESET_EXT = 2,
@@ -227,6 +233,17 @@ void setup() {
   addLog("Boot: reason=%d", (int)last_reset_reason);
   Serial.printf("Random Node ID: %08X\n", node_random_id);
 
+  // Print persistent RTC logs from battery / previous sleep sessions
+  if (logCount > 0) {
+    Serial.printf("--- RTC LOG HISTORY (%d entries) ---\n", logCount);
+    uint8_t startIdx = (logCount == 10) ? logHead : 0;
+    for (uint8_t i = 0; i < logCount; i++) {
+      uint8_t idx = (startIdx + i) % 10;
+      Serial.printf("  [%lu ms] %s\n", logBuffer[idx].timestamp_ms, logBuffer[idx].message);
+    }
+    Serial.println("------------------------------------");
+  }
+
   if (LED_PIN >= 0) {
     pinMode(LED_PIN, OUTPUT);
     digitalWrite(LED_PIN, HIGH); // Turn off LED by default
@@ -264,7 +281,7 @@ void setup() {
     uint32_t startCheck = millis();
     while (millis() - startCheck < 1500) {
       if (digitalRead(BUTTON_PIN) == LOW) {
-        delay(50);
+        delay(300); // 300ms debounce to avoid false triggers on floating GPIO9
         if (digitalRead(BUTTON_PIN) == LOW) {
           forceConfig = true;
           Serial.println("BOOT button press detected during startup window!");

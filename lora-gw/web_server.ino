@@ -1,6 +1,9 @@
 #include "index_html.h"
 #include "admin_html.h"
 #include "update_html.h"
+#include "sw_js.h"
+#include "manifest_json.h"
+#include "icon_svg.h"
 #include <WebServer.h>
 #include <Update.h>
 #include <ArduinoJson.h>
@@ -389,6 +392,21 @@ void setupWebServer() {
   server.on("/api/reset_stats", HTTP_POST, handleResetStatsHttp);
   server.on("/api/reset_stats", HTTP_GET, handleResetStatsHttp);
   server.on("/", handleRootHtml);
+
+  // PWA assets
+  server.on("/sw.js", []() {
+    server.sendHeader("Cache-Control", "no-cache");
+    server.sendHeader("Service-Worker-Allowed", "/");
+    server.send_P(200, "application/javascript", SW_JS);
+  });
+  server.on("/manifest.json", []() {
+    server.sendHeader("Cache-Control", "public, max-age=86400");
+    server.send_P(200, "application/manifest+json", MANIFEST_JSON);
+  });
+  server.on("/icon.svg", []() {
+    server.sendHeader("Cache-Control", "public, max-age=604800");
+    server.send_P(200, "image/svg+xml", ICON_SVG);
+  });
 
   // OTA upload form page
   server.on("/update", HTTP_GET, []() {

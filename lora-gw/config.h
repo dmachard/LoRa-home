@@ -16,8 +16,8 @@
 // ==========================================
 // I2C & OLED SCREEN CONFIGURATION
 // ==========================================
-#define I2C_SDA 4
-#define I2C_SCL 5
+#define I2C_SDA 5
+#define I2C_SCL 6
 #define SCREEN_WIDTH 128
 #define SCREEN_HEIGHT 64
 #define OLED_RESET -1
@@ -31,9 +31,9 @@
 #define LORA_HARDWARE_CHIP 2
 #endif
 
-#define SPI_SCK 6
+#define SPI_SCK 7
 #define SPI_MISO 2
-#define SPI_MOSI 7
+#define SPI_MOSI 0
 #define LORA_CS 10
 #define LORA_DIO0 1
 #define LORA_DIO1 13

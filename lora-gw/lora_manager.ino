@@ -264,7 +264,7 @@ void processLoRaPacket() {
     memset(n.name, 0, sizeof(n.name));
     strncpy(n.name, sp.name, sizeof(n.name) - 1);
 
-    n.readings_count = min((int)sp.count, 10);
+    n.readings_count = min((int)sp.count, 16);
     memcpy(n.readings, sp.readings, n.readings_count * sizeof(SensorReading));
   } else {
     n.readings_count = 0;

@@ -1,10 +1,16 @@
 # LoRa@Home — Secure ESP32 LoRa Telemetry System
 
+<p align="center">
+  <img src="lora-gw/html/icon.svg" alt="LoRa@Home Gateway" width="120" height="120">
+</p>
+
 [![Platform](https://img.shields.io/badge/Platform-ESP32--C6%20%7C%20ESP32--C3-blue.svg)](https://www.espressif.com/)
+[![PWA](https://img.shields.io/badge/PWA-Ready-6366f1.svg)](https://loragw.mchd.me)
 
 An end-to-end, privacy-focused home telemetry network featuring a modular **ESP32-C6 Web Gateway** and configurable **ESP32-C3 Sensor Client Nodes**. Sensor measurements are securely transmitted over **LoRa** using authenticated **AES-128 GCM** encryption.
 
-The Gateway exports **Prometheus metrics** (`/metrics`) for Grafana visualization, serves a live diagnostic dashboard, and handles seamless wireless **Web Bluetooth (BLE) provisioning** directly from modern web browsers.
+The Gateway exports **Prometheus metrics** (`/metrics`) for Grafana visualization, serves a live diagnostic dashboard, and handles seamless wireless **Web Bluetooth (BLE) provisioning** directly from modern web browsers. The web interface is a **Progressive Web App (PWA)** — installable on desktop and mobile directly from the browser.
+
 
 ---
 
