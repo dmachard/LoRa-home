@@ -1,7 +1,7 @@
 // LoRa@Home Gateway - Service Worker
 // Network-first strategy for API calls, cache-first for static assets
 
-const CACHE_NAME = 'lora-home-v3';
+const CACHE_NAME = 'lora-home-v4';
 const STATIC_ASSETS = ['/'];
 
 // Install: cache the shell

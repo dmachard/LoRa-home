@@ -1188,4 +1188,16 @@ input[type="file"] {
   box-shadow: 0 0 8px rgba(239, 68, 68, 0.6);
 }
 
+.badge-count.has-warning {
+  background: #f59e0b;
+  color: #ffffff;
+  box-shadow: 0 0 8px rgba(245, 158, 11, 0.6);
+}
+
+.badge-count.is-normal {
+  background: rgba(16, 185, 129, 0.2);
+  color: #34d399;
+  border: 1px solid rgba(16, 185, 129, 0.3);
+}
+
 

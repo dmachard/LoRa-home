@@ -36,7 +36,7 @@
         </div>
       </div>
       <div class="header-actions">
-        <button id="errors-toggle" class="header-btn" title="Toggle Error Logs" onclick="toggleErrorsPanel()"><svg style="width:14px; height:14px; vertical-align:-1px; margin-right:4px; color:#f87171;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg><span data-i18n="btn_errors">Erreurs</span><span id="errors-count-badge" class="badge-count">0</span></button>
+        <button id="errors-toggle" class="header-btn" title="Toggle Error Logs" onclick="toggleErrorsPanel()"><svg style="width:14px; height:14px; vertical-align:-1px; margin-right:4px; color:#38bdf8;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg><span data-i18n="btn_errors">Diag</span><span id="errors-count-badge" class="badge-count">0</span></button>
         <button id="legend-toggle" class="header-btn" title="Toggle Radio Legend" onclick="toggleRadioLegend()"><svg style="width:14px; height:14px; vertical-align:-1px; margin-right:4px;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg><span data-i18n="btn_legend">Légende</span></button>
         <button id="lang-toggle" class="header-btn" title="Switch Language" onclick="toggleLanguage()">FR</button>
         <button id="theme-toggle" class="header-btn btn-icon-only" title="Toggle Light/Dark Mode" onclick="toggleTheme()">☀️</button>
@@ -47,8 +47,8 @@
     <!-- Error Logs Panel -->
     <div id="errors-panel" class="legend-panel" style="display: none;">
       <div class="legend-header">
-        <h3 style="color: #f87171; display: flex; align-items: center; gap: 8px; margin: 0; font-size: 15px; font-weight: 700;">
-          <svg style="width:16px; height:16px; color:#f87171;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+        <h3 style="color: #38bdf8; display: flex; align-items: center; gap: 8px; margin: 0; font-size: 15px; font-weight: 700;">
+          <svg style="width:16px; height:16px; color:#38bdf8;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
           <span data-i18n="errors_title">Diagnostic LoRa</span>
         </h3>
         <div style="display: flex; align-items: center; gap: 10px;">
@@ -56,11 +56,11 @@
           <button class="legend-close" onclick="toggleErrorsPanel()">✕</button>
         </div>
       </div>
-      <div id="errors-stats-summary" style="background: rgba(248, 113, 113, 0.08); border: 1px solid rgba(248, 113, 113, 0.2); border-radius: 6px; padding: 8px 12px; margin-top: 10px; font-size: 12px; color: #fca5a5; font-family: monospace;">
-        Radio Errors: <b>0</b> &nbsp;|&nbsp; Malformés: <b>0</b> &nbsp;|&nbsp; Nœuds Inconnus: <b>0</b> &nbsp;|&nbsp; <span data-i18n="err_lost_seq">Paquets Perdus (Seq)</span>: <b>0</b>
+      <div id="errors-stats-summary" style="background: rgba(56, 189, 248, 0.08); border: 1px solid rgba(56, 189, 248, 0.2); border-radius: 6px; padding: 8px 12px; margin-top: 10px; font-size: 12px; color: #93c5fd; font-family: monospace;">
+        CRC: <b>0</b> &nbsp;|&nbsp; Malformés: <b>0</b> &nbsp;|&nbsp; Nœuds Inconnus: <b>0</b> &nbsp;|&nbsp; Duplicats: <b>0</b> &nbsp;|&nbsp; <span data-i18n="err_lost_seq">Paquets Perdus (Seq)</span>: <b>0</b>
       </div>
-      <div id="errors-terminal" style="background: #090d16; border: 1px solid rgba(255,255,255,0.08); border-radius: 8px; padding: 12px; font-family: monospace; font-size: 12px; max-height: 200px; overflow-y: auto; color: #f87171; white-space: pre-wrap; margin-top: 8px;">
-        <span style="color: #64748b;" data-i18n="no_errors_logged">Aucune erreur radio détectée.</span>
+      <div id="errors-terminal" style="background: #090d16; border: 1px solid rgba(255,255,255,0.08); border-radius: 8px; padding: 12px; font-family: monospace; font-size: 12px; max-height: 200px; overflow-y: auto; color: #94a3b8; white-space: pre-wrap; margin-top: 8px;">
+        <span style="color: #64748b;" data-i18n="no_errors_logged">Réseau opérationnel — taux d'erreur faible</span>
       </div>
     </div>
 
@@ -123,9 +123,9 @@
         btn_admin: "Administration →",
         btn_hide_logs: "Hide Logs",
         btn_show_logs: "Show Logs",
-        btn_errors: "Errors",
-        errors_title: "Radio & Diagnostic Errors",
-        no_errors_logged: "No radio errors detected. All systems operating normally.",
+        btn_errors: "Diag",
+        errors_title: "Diagnostic LoRa",
+        no_errors_logged: "Network operational — low error rate",
         btn_clear: "Clear",
         logs_title: "Radio Logs",
         logs_live: "Live Auto-Refresh (2s)",
@@ -212,9 +212,9 @@
         btn_admin: "Administration →",
         btn_hide_logs: "Masquer les logs",
         btn_show_logs: "Afficher les logs",
-        btn_errors: "Erreurs",
+        btn_errors: "Diag",
         errors_title: "Diagnostic LoRa",
-        no_errors_logged: "Aucune erreur radio détectée. Tous les systèmes fonctionnent normalement.",
+        no_errors_logged: "Réseau opérationnel — taux d'erreur faible",
         btn_clear: "Effacer",
         logs_title: "Logs Radio",
         logs_live: "Rafraîchissement direct (2s)",
@@ -652,35 +652,36 @@
             const unknownNodesErr = data.gateway.unknown_nodes || 0;
             const totalLostPackets = data.nodes ? data.nodes.reduce((acc, n) => acc + (n.packets_lost || 0), 0) : 0;
             const totalDuplicates = data.nodes ? data.nodes.reduce((acc, n) => acc + (n.duplicate_packets || 0), 0) : 0;
-            // Application errors that affect data integrity: lost sequence packets, malformed payloads, unknown node attempts
-            const totalErrCount = malformedErr + unknownNodesErr + totalLostPackets;
+
+            // Total packet count to compute accurate loss percentage across network
+            const totalRxPackets = data.nodes ? data.nodes.reduce((acc, n) => acc + (n.packets_count || 0), 0) : 0;
+            const totalAllPackets = totalRxPackets + totalLostPackets;
+            const netLossPct = totalAllPackets > 0 ? (totalLostPackets * 100 / totalAllPackets) : 0;
+
+            // Problem conditions: loss > 5%, severe malformed packets (>5), or unauthorized nodes (>0)
+            const isProblem = netLossPct > 5.0 || malformedErr > 5 || unknownNodesErr > 0;
+            const isWarning = netLossPct > 1.0 || malformedErr > 0;
 
             const badgeEl = document.getElementById('errors-count-badge');
             if (badgeEl) {
-              badgeEl.innerText = totalErrCount;
-              if (totalErrCount > 0) {
+              badgeEl.innerText = totalLostPackets;
+              badgeEl.classList.remove('has-errors', 'has-warning', 'is-normal');
+              if (isProblem) {
                 badgeEl.classList.add('has-errors');
+              } else if (isWarning) {
+                badgeEl.classList.add('has-warning');
               } else {
-                badgeEl.classList.remove('has-errors');
+                badgeEl.classList.add('is-normal');
               }
             }
 
             const errCrc = data.gateway.radio_err_crc || 0;
-            const errHeader = data.gateway.radio_err_header || 0;
-            const errTimeout = data.gateway.radio_err_timeout || 0;
-            const errOther = data.gateway.radio_err_other || 0;
+            const crcPct = totalAllPackets > 0 ? (errCrc * 100 / totalAllPackets).toFixed(2) : '0.00';
+            const lossPctStr = netLossPct.toFixed(2).replace('.', ',');
 
             const statsSummaryEl = document.getElementById('errors-stats-summary');
             if (statsSummaryEl) {
-              let breakdown = [];
-              if (errCrc > 0) breakdown.push(`CRC (-7): <b>${errCrc}</b>`);
-              if (errHeader > 0) breakdown.push(`Header (-3): <b>${errHeader}</b>`);
-              if (errTimeout > 0) breakdown.push(`Timeout (-6): <b>${errTimeout}</b>`);
-              if (errOther > 0) breakdown.push(`Autres: <b>${errOther}</b>`);
-              
-              const detailStr = breakdown.length > 0 ? ` (${breakdown.join(', ')})` : '';
-
-              statsSummaryEl.innerHTML = `Radio Errors: <b>${radioErr}</b>${detailStr} &nbsp;|&nbsp; Malformés: <b>${malformedErr}</b> &nbsp;|&nbsp; Nœuds Inconnus: <b>${unknownNodesErr}</b> &nbsp;|&nbsp; Duplicats (Retries ACK): <b>${totalDuplicates}</b> &nbsp;|&nbsp; ${t('err_lost_seq')}: <b>${totalLostPackets}</b>`;
+              statsSummaryEl.innerHTML = `CRC: <b>${errCrc}</b> (${crcPct}%) &nbsp;|&nbsp; Malformés: <b>${malformedErr}</b> &nbsp;|&nbsp; Inconnus: <b>${unknownNodesErr}</b> &nbsp;|&nbsp; Duplicats: <b>${totalDuplicates}</b> &nbsp;|&nbsp; ${t('err_lost_seq')}: <b>${totalLostPackets}</b> (${lossPctStr}%)`;
             }
           }
 
@@ -801,7 +802,7 @@
               const txPowerR   = node.readings.find(r => r.type === 17);
               const nTxPower   = txPowerR ? Math.round(txPowerR.value) : null;
 
-              const failColor  = nTxFailed  > 0 ? '#ef4444' : 'inherit';
+              const failColor  = nTxFailed  > 0 ? '#f97316' : 'inherit';
               const retryColor = nTxRetries > 0 ? '#fbbf24' : 'inherit';
 
               const radioSvg = '<path d="M4.93 4.93A10 10 0 0 1 19.07 4.93M7.76 7.76a6 6 0 0 1 8.48 0M12 12v.01"/>';
