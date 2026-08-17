@@ -160,7 +160,7 @@ bool gcm_decrypt(const uint8_t *frame, uint8_t frame_len, uint8_t *payload, uint
 bool sendDataAndWaitForAck(const uint8_t* frame, uint8_t len, uint32_t current_seq) {
   uint8_t ack_total_len = HDR_SIZE + sizeof(AckPayload) + TAG_SIZE;
   uint32_t ack_toa_ms = (uint32_t)(radio->getTimeOnAir(ack_total_len) / 1000);
-  uint32_t ack_timeout_ms = ack_toa_ms + 250;
+  uint32_t ack_timeout_ms = ack_toa_ms + 500;
 
   tx_total++;
   bool had_retry = false;

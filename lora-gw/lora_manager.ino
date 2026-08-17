@@ -78,14 +78,32 @@ bool gcm_encrypt_ack(uint8_t target_node_id, uint32_t seq, uint8_t status, uint8
 
 extern uint32_t global_ack_sent_total;
 
-void sendAck(uint8_t target_node_id, uint32_t seq, uint8_t status) {
+void sendAck(uint8_t target_node_id, uint32_t seq, uint8_t status, float rssi = 0.0f) {
   uint8_t ack_frame[64];
   uint8_t ack_len = 0;
   if (gcm_encrypt_ack(target_node_id, seq, status, ack_frame, &ack_len)) {
+    // Determine maximum legal TX power for the configured frequency band
+    int max_pwr = 20;
+    if (gw_lora_freq >= 868.0f && gw_lora_freq <= 868.6f) {
+      max_pwr = 14; // ETSI Sub-band M (868.1-868.5 MHz) -> Max 14 dBm (25mW)
+    } else if (gw_lora_freq >= 433.0f && gw_lora_freq <= 434.79f) {
+      max_pwr = 10; // ETSI 433 MHz ISM band -> Max 10 dBm (10mW)
+    }
+
+    int pwr = LORA_POWER;
+    if (rssi < -85.0f) {
+      pwr = max_pwr; // Weak signal -> Max legal power
+    } else if (rssi < -75.0f) {
+      pwr = min(14, max_pwr); // Medium signal -> Standard 14 dBm (or max_pwr)
+    } else if (rssi != 0.0f) {
+      pwr = min(8, max_pwr);  // Strong signal -> Eco 8 dBm
+    }
+    radio->setOutputPower(pwr);
+
     int state = radio->transmit(ack_frame, ack_len);
     if (state == RADIOLIB_ERR_NONE) {
       global_ack_sent_total++;
-      addGwLog("Node %d | ACK SENT seq=%lu", target_node_id, seq);
+      addGwLog("Node %d | ACK SENT seq=%lu (%ddBm)", target_node_id, seq, pwr);
     } else {
       addGwLog("Node %d | ACK TX FAILED code=%d", target_node_id, state);
     }
@@ -223,7 +241,7 @@ void processLoRaPacket() {
       // Same session + same sequence number = Retry / Duplicate
       n.duplicate_packets++;
       addGwLog("Node %d | DUPLICATE seq=%lu (resending ACK)", node_id, seq);
-      sendAck(node_id, seq, 0);
+      sendAck(node_id, seq, 0, rssi);
       global_total_processing_us = micros() - t0;
       return;
     } else if (seq > n.seq + 1) {
@@ -274,7 +292,7 @@ void processLoRaPacket() {
   last_active_node_id = node_id;
 
   uint32_t t5 = micros();
-  sendAck(node_id, seq, 0);
+  sendAck(node_id, seq, 0, rssi);
   uint32_t t6 = micros();
 
   global_rx_processing_us = t6 - t5;

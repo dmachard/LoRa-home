@@ -39,6 +39,7 @@ Nodes advertise a Web Bluetooth service when unconfigured or when triggered manu
    - **Node ID (1–15)** & **Node Name** (e.g., `BUREAU`).
    - **LoRa Chip Hardware:** Select **SX1262** or **SX1278**.
    - **RF Parameters:** Frequency (e.g. `433.0 MHz`), Bandwidth (`125.0 kHz`), Spreading Factor (`SF7`–`SF12`), Coding Rate (`4/5`), Sync Word (`0x12` or `0x34`).
+     > ⚠️ **Important:** In single-channel transceivers (ESP32 + SX1262), the **Spreading Factor (SF)**, **Frequency**, **Bandwidth**, and **Sync Word** MUST be identical across all nodes and the Gateway.
    - **Network AES Key:** Must match the Gateway's AES key.
    - **Transmit Interval:** Sleeping / telemetry interval in seconds (e.g., `60s`).
 5. Click **Save Configuration**. The node saves settings to NVM and reboots into normal telemetry mode.
