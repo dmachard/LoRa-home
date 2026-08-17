@@ -57,7 +57,7 @@
         </div>
       </div>
       <div id="errors-stats-summary" style="background: rgba(56, 189, 248, 0.08); border: 1px solid rgba(56, 189, 248, 0.2); border-radius: 6px; padding: 8px 12px; margin-top: 10px; font-size: 12px; color: #93c5fd; font-family: monospace;">
-        CRC: <b>0</b> &nbsp;|&nbsp; Malformés: <b>0</b> &nbsp;|&nbsp; Nœuds Inconnus: <b>0</b> &nbsp;|&nbsp; Duplicats: <b>0</b> &nbsp;|&nbsp; <span data-i18n="err_lost_seq">Paquets Perdus (Seq)</span>: <b>0</b>
+        <span style="color: #34d399; font-weight: 700;"><span data-i18n="delivery_rate">Livraison</span>: 100,00%</span> &nbsp;|&nbsp; CRC: <b>0</b> &nbsp;|&nbsp; Malformés: <b>0</b> &nbsp;|&nbsp; Nœuds Inconnus: <b>0</b> &nbsp;|&nbsp; Duplicats: <b>0</b> &nbsp;|&nbsp; <span data-i18n="err_lost_seq">Paquets Perdus (Seq)</span>: <b>0</b>
       </div>
       <div id="errors-terminal" style="background: #090d16; border: 1px solid rgba(255,255,255,0.08); border-radius: 8px; padding: 12px; font-family: monospace; font-size: 12px; max-height: 200px; overflow-y: auto; color: #94a3b8; white-space: pre-wrap; margin-top: 8px;">
         <span style="color: #64748b;" data-i18n="no_errors_logged">Réseau opérationnel — taux d'erreur faible</span>
@@ -201,6 +201,7 @@
         tooltip_lqi: "LQI: Composite Link Quality Score based on RSSI & SNR margins",
         duplicates: "Duplicates",
         err_lost_seq: "Lost Packets (Seq)",
+        delivery_rate: "Delivery",
         tx_perfect: "Perfect",
         tx_good: "Good",
         tx_degraded: "Degraded",
@@ -290,6 +291,7 @@
         tooltip_lqi: "LQI: Score de Qualité du Lien calculé à partir des marges RSSI et SNR",
         duplicates: "Doublons",
         err_lost_seq: "Paquets Perdus (Seq)",
+        delivery_rate: "Livraison",
         tx_perfect: "Parfait",
         tx_good: "Bon",
         tx_degraded: "Dégradé",
@@ -678,10 +680,16 @@
             const errCrc = data.gateway.radio_err_crc || 0;
             const crcPct = totalAllPackets > 0 ? (errCrc * 100 / totalAllPackets).toFixed(2) : '0.00';
             const lossPctStr = netLossPct.toFixed(2).replace('.', ',');
+            const deliveryPct = totalAllPackets > 0 ? Math.max(0, 100 - netLossPct) : 100;
+            const deliveryPctStr = deliveryPct.toFixed(2).replace('.', ',');
+
+            let delColor = '#34d399';
+            if (deliveryPct < 95.0) delColor = '#ef4444';
+            else if (deliveryPct < 98.0) delColor = '#fbbf24';
 
             const statsSummaryEl = document.getElementById('errors-stats-summary');
             if (statsSummaryEl) {
-              statsSummaryEl.innerHTML = `CRC: <b>${errCrc}</b> (${crcPct}%) &nbsp;|&nbsp; Malformés: <b>${malformedErr}</b> &nbsp;|&nbsp; Inconnus: <b>${unknownNodesErr}</b> &nbsp;|&nbsp; Duplicats: <b>${totalDuplicates}</b> &nbsp;|&nbsp; ${t('err_lost_seq')}: <b>${totalLostPackets}</b> (${lossPctStr}%)`;
+              statsSummaryEl.innerHTML = `<span style="color: ${delColor}; font-weight: 700;">${t('delivery_rate')}: ${deliveryPctStr}%</span> &nbsp;|&nbsp; CRC: <b>${errCrc}</b> (${crcPct}%) &nbsp;|&nbsp; Malformés: <b>${malformedErr}</b> &nbsp;|&nbsp; Inconnus: <b>${unknownNodesErr}</b> &nbsp;|&nbsp; Duplicats: <b>${totalDuplicates}</b> &nbsp;|&nbsp; ${t('err_lost_seq')}: <b>${totalLostPackets}</b> (${lossPctStr}%)`;
             }
           }
 
@@ -966,12 +974,17 @@
           const totalPackets = (node.packets_count || 0) + lostCount;
           const lossPercent = totalPackets > 0 ? (lostCount * 100) / totalPackets : 0;
           const lossPercentStr = lossPercent.toFixed(1).replace('.', ',');
+          const nodeDeliveryPct = totalPackets > 0 ? Math.max(0, 100 - lossPercent) : 100;
+          const nodeDeliveryPctStr = nodeDeliveryPct.toFixed(1).replace('.', ',') + '%';
 
           let lossColor = '#34d399';
+          let deliveryColor = '#34d399';
           if (lossPercent > 5) {
             lossColor = '#ef4444';
+            deliveryColor = '#ef4444';
           } else if (lossPercent >= 1) {
             lossColor = '#fbbf24';
+            deliveryColor = '#fbbf24';
           }
 
           const nodeUptimeSec = (node.seq || 0) * (node.tx_interval || 60) + (node.elapsed_sec || 0);
@@ -1016,6 +1029,7 @@
                     <div class="diag-item" title="${t('tooltip_lqi')}">LQI: <b>${link.lqiPercent}%</b> <span class="radio-badge rssi-${link.badgeClass}">${link.qualityLabel}</span></div>
                     <div class="diag-item">Uptime: <b>${nodeUptimeText}</b></div>
                     <div class="diag-item">${t('boot')}: <strong style="color: ${getResetReasonColor(node.last_reset_reason || 8)};">${getResetReasonLabel(node.last_reset_reason || 8)}</strong></div>
+                    <div class="diag-item" style="cursor:pointer;" title="${t('reset_stats_title')}" onclick="resetNodeStats(${node.id})">${t('delivery_rate')}: <b style="color: ${deliveryColor}">${nodeDeliveryPctStr}</b></div>
                     <div class="diag-item" style="cursor:pointer;" title="${t('reset_stats_title')}" onclick="resetNodeStats(${node.id})">${t('lost')}: <b style="color: ${lossColor}">${lostCount} (${lossPercentStr}%)</b></div>
                     <div class="diag-item" style="cursor:pointer;" title="${t('reset_stats_title')}" onclick="resetNodeStats(${node.id})">Rbt: <b style="color: ${node.reboots > 0 ? '#fbbf24' : 'inherit'}">${node.reboots} ↻</b></div>
                   </div>
